@@ -1,10 +1,7 @@
---- NOTE: I keep all plugins in one file, because I often want to disable half of them when I debug what plugin broke my config.
+--- note: i keep all plugins in one file, because i often want to disable half of them when i debug what plugin broke my config.
 
 local nvim_treesitter_dev = false
 local nvim_treesitter_textobjects_dev = false
-local jupynium_dev = false
-
-local icons = require "kiyoon.icons"
 
 return {
   {
@@ -17,50 +14,6 @@ return {
     end,
   },
   {
-    "kiyoon/tmuxsend.vim",
-    keys = {
-      {
-        "-",
-        "<Plug>(tmuxsend-smart)",
-        mode = { "n", "x" },
-        desc = "Send to tmux (smart)",
-      },
-      {
-        "_",
-        "<Plug>(tmuxsend-plain)",
-        mode = { "n", "x" },
-        desc = "Send to tmux (plain)",
-      },
-      {
-        "<space>-",
-        "<Plug>(tmuxsend-uid-smart)",
-        mode = { "n", "x" },
-        desc = "Send to tmux w/ pane uid (smart)",
-      },
-      {
-        "<space>_",
-        "<Plug>(tmuxsend-uid-plain)",
-        mode = { "n", "x" },
-        desc = "Send to tmux w/ pane uid (plain)",
-      },
-      { "<C-_>", "<Plug>(tmuxsend-tmuxbuffer)", mode = { "n", "x" }, desc = "Yank to tmux buffer" },
-    },
-  },
-
-  --- NOTE: Python
-  -- {
-  --   "kiyoon/vim-autoimport",
-  --   ft = { "python" },
-  --   keys = {
-  --     { "<M-CR>", ":ImportSymbol<CR>" },
-  --     { "<M-CR>", "<Esc>:ImportSymbol<CR>a", mode = "i" },
-  --   },
-  -- },
-  -- {
-  --   "Vimjas/vim-python-pep8-indent",
-  --   ft = "python",
-  -- },
-  {
     "metakirby5/codi.vim",
     cmd = "Codi",
     init = function()
@@ -70,59 +23,6 @@ return {
         },
       }
       vim.g["codi#virtual_text_pos"] = "right_align"
-    end,
-  },
-  {
-    "kiyoon/jupynium.nvim",
-    build = "conda run --no-capture-output -n jupynium pip install .",
-    enabled = vim.fn.isdirectory(vim.fn.expand "~/bin/miniconda3/envs/jupynium"),
-    ft = { "python", "markdown" },
-    config = function()
-      local jupynium_conda_env
-      if jupynium_dev then
-        jupynium_conda_env = "jupynium_dev"
-      else
-        jupynium_conda_env = "jupynium"
-      end
-      require("jupynium").setup {
-        default_notebook_URL = "localhost:8888/nbclassic",
-        python_host = { "conda", "run", "--no-capture-output", "-n", jupynium_conda_env, "python" },
-        jupyter_command = { "conda", "run", "--no-capture-output", "-n", "base", "jupyter" },
-        -- firefox_profiles_ini_path = "~/snap/firefox/common/.mozilla/firefox/profiles.ini",
-      }
-    end,
-    dev = jupynium_dev,
-  },
-
-  --- NOTE: Coding
-  -- {
-  --   -- "jk or jj to escape insert mode"
-  --   "max397574/better-escape.nvim",
-  --   event = "InsertEnter",
-  --   config = function()
-  --     require("better_escape").setup()
-  --   end,
-  -- },
-  {
-    -- <space>siwie to substitute word from entire buffer
-    -- <space>siwip to substitute word from paragraph
-    -- <space>siwif to substitute word from function
-    -- <space>siwic to substitute word from class
-    -- <space>ssip to substitute word from paragraph
-    "svermeulen/vim-subversive",
-    keys = {
-      { "<space>s", "<plug>(SubversiveSubstituteRange)", mode = { "n", "x" } },
-      { "<space>ss", "<plug>(SubversiveSubstituteWordRange)", mode = { "n" } },
-    },
-  },
-
-  {
-    -- Similar to tpope/vim-surround
-    -- Plus dsf to delete surrounding function call.
-    "kylechui/nvim-surround",
-    event = "VeryLazy",
-    config = function()
-      require("nvim-surround").setup()
     end,
   },
   {
@@ -173,12 +73,6 @@ return {
       require("Comment").setup()
     end,
   },
-  -- {
-  --   "echasnovski/mini.comment",
-  --   config = function()
-  --     require("mini.comment").setup()
-  --   end,
-  -- },
   {
     "tpope/vim-sleuth", -- Detect tabstop and shiftwidth automatically
     event = "BufReadPost",
@@ -189,31 +83,6 @@ return {
     --   -- end, 0)
     -- end,
   },
-  {
-    "kana/vim-textobj-entire",
-    keys = {
-      { "ie", mode = { "o", "x" }, desc = "Select entire buffer (file)" },
-      { "ae", mode = { "o", "x" }, desc = "Select entire buffer (file)" },
-    },
-    dependencies = { "kana/vim-textobj-user" },
-  }, -- vie, vae to select entire buffer (file)
-  {
-    "kana/vim-textobj-fold",
-    keys = {
-      { "iz", mode = { "o", "x" }, desc = "Select fold" },
-      { "az", mode = { "o", "x" }, desc = "Select fold" },
-    },
-    dependencies = { "kana/vim-textobj-user" },
-  }, -- viz, vaz to select fold
-  {
-    "glts/vim-textobj-comment",
-    keys = {
-      { "ic", mode = { "o", "x" }, desc = "Select comment block" },
-      { "ac", mode = { "o", "x" }, desc = "Select comment block" },
-    },
-    dependencies = { "kana/vim-textobj-user" },
-  }, -- vic, vac
-
   {
     "chaoren/vim-wordmotion",
     event = "VeryLazy",
@@ -265,29 +134,6 @@ return {
     end,
   },
   {
-    "ojroques/nvim-osc52",
-    event = "TextYankPost",
-    config = function()
-      require("osc52").setup {
-        tmux_passthrough = true,
-      }
-      -- Every time you yank to + register, copy it to system clipboard using OSC52.
-      -- Use a terminal that supports OSC52,
-      -- then the clipboard copy will work even from remote SSH to local machine.
-      local function copy()
-        if vim.v.event.operator == "y" and vim.v.event.regname == "+" then
-          require("osc52").copy_register "+"
-        end
-      end
-
-      vim.api.nvim_create_autocmd("TextYankPost", { callback = copy })
-
-      -- Because we lazy-load on TextYankPost, the above autocmd will not be executed at first.
-      -- So we need to manually call it once.
-      copy()
-    end,
-  },
-  {
     "github/copilot.vim",
     -- event = "InsertEnter",
     -- cmd = { "Copilot" },
@@ -308,149 +154,6 @@ return {
   },
   -- Free copilot alternative
   -- "Exafunction/codeium.vim",
-  {
-    "Bryley/neoai.nvim",
-    dependencies = {
-      "MunifTanjim/nui.nvim",
-    },
-    cmd = {
-      "NeoAI",
-      "NeoAIOpen",
-      "NeoAIClose",
-      "NeoAIToggle",
-      "NeoAIContext",
-      "NeoAIContextOpen",
-      "NeoAIContextClose",
-      "NeoAIInject",
-      "NeoAIInjectCode",
-      "NeoAIInjectContext",
-      "NeoAIInjectContextCode",
-      "InjectCommitMessage",
-      "TextifyCommitMessage",
-    },
-    keys = {
-      { "<space>as", mode = { "x" }, desc = "summarize text" },
-    },
-    config = function()
-      require("neoai").setup {
-        models = {
-          {
-            name = "openai",
-            model = "gpt-4-turbo",
-            params = nil,
-          },
-        },
-        shortcuts = {
-          {
-            name = "textify",
-            key = "<space>as",
-            desc = "fix text with AI",
-            use_context = true,
-            prompt = [[
-                Please rewrite the text to make it more readable, clear,
-                concise, and fix any grammatical, punctuation, or spelling
-                errors
-            ]],
-            modes = { "x" },
-            strip_function = nil,
-          },
-        },
-      }
-      require "kiyoon.neoai"
-    end,
-  },
-
-  {
-    "robitx/gp.nvim",
-    init = function()
-      local status, wk = pcall(require, "which-key")
-      if status then
-        wk.register {
-          ["<leader>c"] = { name = "ChatGPT" },
-        }
-      end
-    end,
-    cmd = {
-      "GpChatNew",
-      "GpChatPaste",
-      "GpRewrite",
-      "GpAppend",
-      "GpAgent",
-      "GpNextAgent",
-    },
-    keys = {
-      { "<leader>cg", "<cmd>GpChatNew<CR>", mode = { "n", "x" }, desc = "ChatGPT" },
-      {
-        "<leader>ce",
-        "<cmd>GpRewrite<CR>",
-        mode = { "n", "x" },
-        desc = "ChatGPT Edit With Instructions",
-      },
-    },
-    config = function()
-      require("gp").setup {
-        openai_api_key = { "pass", "API/openai" },
-        agents = {
-          {
-            name = "ChatGPT4-Turbo",
-            chat = true,
-            command = false,
-            -- string with model name or table with model name and parameters
-            model = { model = "gpt-4-turbo", temperature = 1.1, top_p = 1 },
-            -- system prompt (use this to specify the persona/role of the AI)
-            system_prompt = "You are a general AI assistant.\n\n"
-              .. "The user provided the additional info about how they would like you to respond:\n\n"
-              .. "- If you're unsure don't guess and say you don't know instead.\n"
-              .. "- Ask question if you need clarification to provide better answer.\n"
-              .. "- Think deeply and carefully from first principles step by step.\n"
-              .. "- Zoom out first to see the big picture and then zoom in to details.\n"
-              .. "- Use Socratic method to improve your thinking and coding skills.\n"
-              .. "- Don't elide any code from your output if the answer requires coding.\n"
-              .. "- Take a deep breath; You've got this!\n",
-          },
-          {
-            name = "ChatGPT3-5-Turbo",
-            chat = true,
-            command = false,
-            -- string with model name or table with model name and parameters
-            model = { model = "gpt-3.5-turbo", temperature = 1.1, top_p = 1 },
-            -- system prompt (use this to specify the persona/role of the AI)
-            system_prompt = "You are a general AI assistant.\n\n"
-              .. "The user provided the additional info about how they would like you to respond:\n\n"
-              .. "- If you're unsure don't guess and say you don't know instead.\n"
-              .. "- Ask question if you need clarification to provide better answer.\n"
-              .. "- Think deeply and carefully from first principles step by step.\n"
-              .. "- Zoom out first to see the big picture and then zoom in to details.\n"
-              .. "- Use Socratic method to improve your thinking and coding skills.\n"
-              .. "- Don't elide any code from your output if the answer requires coding.\n"
-              .. "- Take a deep breath; You've got this!\n",
-          },
-          {
-            name = "CodeGPT4-Turbo",
-            chat = false,
-            command = true,
-            -- string with model name or table with model name and parameters
-            model = { model = "gpt-4-turbo", temperature = 0.8, top_p = 1 },
-            -- system prompt (use this to specify the persona/role of the AI)
-            system_prompt = "You are an AI working as a code editor.\n\n"
-              .. "Please AVOID COMMENTARY OUTSIDE OF THE SNIPPET RESPONSE.\n"
-              .. "START AND END YOUR ANSWER WITH:\n\n```",
-          },
-          {
-            name = "CodeGPT3-5-Turbo",
-            chat = false,
-            command = true,
-            -- string with model name or table with model name and parameters
-            model = { model = "gpt-3.5-turbo", temperature = 0.8, top_p = 1 },
-            -- system prompt (use this to specify the persona/role of the AI)
-            system_prompt = "You are an AI working as a code editor.\n\n"
-              .. "Please AVOID COMMENTARY OUTSIDE OF THE SNIPPET RESPONSE.\n"
-              .. "START AND END YOUR ANSWER WITH:\n\n```",
-          },
-        },
-      }
-    end,
-  },
 
   --- NOTE: Git
 
@@ -1283,37 +986,6 @@ return {
       }
     end,
   },
-  -- Show current context in lualine (statusline)
-  {
-    "SmiteshP/nvim-navic",
-    lazy = true,
-    init = function()
-      vim.g.navic_silence = true
-      vim.api.nvim_create_augroup("LspAttach_navic", {})
-      vim.api.nvim_create_autocmd("LspAttach", {
-        group = "LspAttach_navic",
-        callback = function(args)
-          if not (args.data and args.data.client_id) then
-            return
-          end
-
-          local bufnr = args.buf
-          local client = vim.lsp.get_client_by_id(args.data.client_id)
-          if client.server_capabilities.documentSymbolProvider then
-            require("nvim-navic").attach(client, bufnr)
-          end
-        end,
-      })
-    end,
-    opts = function()
-      return {
-        separator = " ",
-        highlight = true,
-        depth_limit = 5,
-        icons = icons.kinds,
-      }
-    end,
-  },
 
   -- Formatting and linting
   {
@@ -1432,6 +1104,29 @@ return {
       use_diagnostic_signs = true,
       auto_open = false,
       auto_close = true,
+  {
+    "ojroques/nvim-osc52",
+    event = "TextYankPost",
+    config = function()
+      require("osc52").setup {
+        tmux_passthrough = true,
+      }
+      -- Every time you yank to + register, copy it to system clipboard using OSC52.
+      -- Use a terminal that supports OSC52,
+      -- then the clipboard copy will work even from remote SSH to local machine.
+      local function copy()
+        if vim.v.event.operator == "y" and vim.v.event.regname == "+" then
+          require("osc52").copy_register "+"
+        end
+      end
+
+      vim.api.nvim_create_autocmd("TextYankPost", { callback = copy })
+
+      -- Because we lazy-load on TextYankPost, the above autocmd will not be executed at first.
+      -- So we need to manually call it once.
+      copy()
+    end,
+  },
       auto_preview = true,
       auto_fold = true,
     },
@@ -1705,13 +1400,6 @@ return {
 
   --- NOTE: Utils
   {
-    "dstein64/vim-startuptime",
-    cmd = "StartupTime",
-    config = function()
-      vim.g.startuptime_tries = 10
-    end,
-  },
-  {
     "mbbill/undotree",
     cmd = "UndotreeToggle",
     keys = {
@@ -1719,16 +1407,6 @@ return {
     },
   },
   -- search/replace in multiple files
-  {
-    "windwp/nvim-spectre",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-    },
-    -- stylua: ignore
-    keys = {
-      { "<leader>sr", function() require("spectre").open() end, desc = "Replace in files (Spectre)" },
-    },
-  },
   {
     "folke/which-key.nvim",
     event = "VeryLazy",
@@ -1758,23 +1436,23 @@ return {
       ]]
     end,
   },
-  -- {
-  --   "mechatroner/rainbow_csv",
-  --   ft = "csv",
-  -- },
-  -- {
-  --   "cameron-wags/rainbow_csv.nvim",
-  --   opts = {},
-  --   ft = {
-  --     "csv",
-  --     "tsv",
-  --     "csv_semicolon",
-  --     "csv_whitespace",
-  --     "csv_pipe",
-  --     "rfc_csv",
-  --     "rfc_semicolon",
-  --   },
-  -- },
+  {
+    "mechatroner/rainbow_csv",
+    ft = "csv",
+  },
+  {
+    "cameron-wags/rainbow_csv.nvim",
+    opts = {},
+    ft = {
+      "csv",
+      "tsv",
+      "csv_semicolon",
+      "csv_whitespace",
+      "csv_pipe",
+      "rfc_csv",
+      "rfc_semicolon",
+    },
+  },
   {
     "fei6409/log-highlight.nvim",
     config = function()
@@ -1792,29 +1470,6 @@ return {
       }
     end,
   },
-  -- NOTE: for kiyoon/treemux
-  -- You need to have them installed but not using them with `cond = false`
-  {
-    "kiyoon/nvim-tree-remote.nvim",
-    cond = false,
-  },
-  {
-    "andythigpen/nvim-coverage",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-    },
-    config = function()
-      require("coverage").setup()
-    end,
-  },
-  {
-    "stevearc/overseer.nvim",
-    cmd = {
-      "OverseerRun",
-      "OverseerToggle",
-    },
-    opts = {},
-  },
   {
     "lifthrasiir/hangeul.vim",
     init = function()
@@ -1824,165 +1479,4 @@ return {
       vim.keymap.set("i", "<C-h>", "<Plug>HanMode", { noremap = false, silent = true })
     end,
   },
-  {
-    "benlubas/molten-nvim",
-    version = "^1.0.0", -- use version <2.0.0 to avoid breaking changes
-    cmd = {
-      "MoltenInit",
-      "MoltenInfo",
-    },
-    keys = {
-      {
-        "<space>me",
-        ":<C-u>MoltenEvaluateVisual<CR>gv",
-        mode = "x",
-        desc = "evaluate visual selection",
-      },
-    },
-    dependencies = {
-      "3rd/image.nvim",
-    },
-    build = ":UpdateRemotePlugins",
-    init = function()
-      -- these are examples, not defaults. Please see the readme
-      vim.g.molten_image_provider = "image.nvim"
-      vim.g.molten_output_win_max_height = 20
-    end,
-  },
-  {
-    -- see the image.nvim readme for more information about configuring this plugin
-    "3rd/image.nvim",
-    opts = {
-      backend = "kitty",
-      integrations = {
-        markdown = {
-          enabled = false,
-          clear_in_insert_mode = false,
-          download_remote_images = true,
-          only_render_image_at_cursor = false,
-          filetypes = { "markdown", "vimwiki" }, -- markdown extensions (ie. quarto) can go here
-        },
-      },
-      max_width = 100,
-      max_height = 12,
-      max_height_window_percentage = math.huge,
-      max_width_window_percentage = math.huge,
-      window_overlap_clear_enabled = false, -- toggles images when windows are overlapped
-      window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
-      editor_only_render_when_focused = false, -- auto show/hide images when the editor gains/looses focus
-      tmux_show_only_in_active_window = false, -- auto show/hide images in the correct Tmux window (needs visual-activity off)
-      hijack_file_patterns = {
-        "*.png",
-        "*.jpg",
-        "*.jpeg",
-        "*.gif",
-        "*.webp",
-        "*.PNG",
-        "*.JPG",
-        "*.JPEG",
-        "*.GIF",
-        "*.WEBP",
-      }, -- render image files as images when opened
-    },
-  },
-  {
-    -- required for wookayin/dotfiles, the python keymaps
-    -- which is in kiyoon/python_utils.lua
-    "tpope/vim-repeat",
-  },
-  {
-    "linrongbin16/gitlinker.nvim",
-    config = function()
-      require("gitlinker").setup()
-    end,
-  },
-  {
-    "jbyuki/venn.nvim",
-    keys = {
-      {
-        "<leader>v",
-        "<cmd>lua Toggle_venn()<CR>",
-        mode = "n",
-        desc = "Toggle Venn",
-      },
-    },
-    config = function()
-      function _G.Toggle_venn()
-        local venn_enabled = vim.inspect(vim.b.venn_enabled)
-        if venn_enabled == "nil" then
-          vim.b.venn_enabled = true
-          vim.cmd [[setlocal ve=all]]
-          -- draw a line on HJKL keystokes
-          vim.api.nvim_buf_set_keymap(0, "n", "J", "<C-v>j:VBox<CR>", { noremap = true })
-          vim.api.nvim_buf_set_keymap(0, "n", "K", "<C-v>k:VBox<CR>", { noremap = true })
-          vim.api.nvim_buf_set_keymap(0, "n", "L", "<C-v>l:VBox<CR>", { noremap = true })
-          vim.api.nvim_buf_set_keymap(0, "n", "H", "<C-v>h:VBox<CR>", { noremap = true })
-          -- draw a box by pressing "f" with visual selection
-          vim.api.nvim_buf_set_keymap(0, "v", "f", ":VBox<CR>", { noremap = true })
-        else
-          vim.cmd [[setlocal ve=]]
-          vim.cmd [[mapclear <buffer>]]
-          vim.b.venn_enabled = nil
-        end
-      end
-    end,
-  },
-  -- {
-  --   "Wansmer/symbol-usage.nvim",
-  --   event = "BufReadPre", -- need run before LspAttach if you use nvim 0.9. On 0.10 use 'LspAttach'
-  --   config = function()
-  --     local function h(name)
-  --       return vim.api.nvim_get_hl(0, { name = name })
-  --     end
-  --
-  --     -- hl-groups can have any name
-  --     vim.api.nvim_set_hl(0, "SymbolUsageRounding", { fg = h("CursorLine").bg, italic = true })
-  --     vim.api.nvim_set_hl(0, "SymbolUsageContent", { bg = h("CursorLine").bg, fg = h("Comment").fg, italic = true })
-  --     vim.api.nvim_set_hl(0, "SymbolUsageRef", { fg = h("Function").fg, bg = h("CursorLine").bg, italic = true })
-  --     vim.api.nvim_set_hl(0, "SymbolUsageDef", { fg = h("Type").fg, bg = h("CursorLine").bg, italic = true })
-  --     vim.api.nvim_set_hl(0, "SymbolUsageImpl", { fg = h("@keyword").fg, bg = h("CursorLine").bg, italic = true })
-  --
-  --     local function text_format(symbol)
-  --       local res = {}
-  --
-  --       local round_start = { "", "SymbolUsageRounding" }
-  --       local round_end = { "", "SymbolUsageRounding" }
-  --
-  --       if symbol.references then
-  --         local usage = symbol.references <= 1 and "usage" or "usages"
-  --         local num = symbol.references == 0 and "no" or symbol.references
-  --         table.insert(res, round_start)
-  --         table.insert(res, { "󰌹 ", "SymbolUsageRef" })
-  --         table.insert(res, { ("%s %s"):format(num, usage), "SymbolUsageContent" })
-  --         table.insert(res, round_end)
-  --       end
-  --
-  --       if symbol.definition then
-  --         if #res > 0 then
-  --           table.insert(res, { " ", "NonText" })
-  --         end
-  --         table.insert(res, round_start)
-  --         table.insert(res, { "󰳽 ", "SymbolUsageDef" })
-  --         table.insert(res, { symbol.definition .. " defs", "SymbolUsageContent" })
-  --         table.insert(res, round_end)
-  --       end
-  --
-  --       if symbol.implementation then
-  --         if #res > 0 then
-  --           table.insert(res, { " ", "NonText" })
-  --         end
-  --         table.insert(res, round_start)
-  --         table.insert(res, { "󰡱 ", "SymbolUsageImpl" })
-  --         table.insert(res, { symbol.implementation .. " impls", "SymbolUsageContent" })
-  --         table.insert(res, round_end)
-  --       end
-  --
-  --       return res
-  --     end
-  --
-  --     require("symbol-usage").setup {
-  --       text_format = text_format,
-  --     }
-  --   end,
-  -- },
 }

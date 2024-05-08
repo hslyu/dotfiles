@@ -4,14 +4,8 @@
 
 INSTALL_DIR="$HOME/.local"
 
-if [[ $OSTYPE == "darwin"* ]]; then
-	# brew install --cask miniconda
-	brew install node
-else
-
-	if ! command -v $INSTALL_DIR/bin/npm &>/dev/null; then
-		curl -sL install-node.vercel.app/lts | bash -s -- --prefix="$INSTALL_DIR" -y
-	fi
+if ! command -v $INSTALL_DIR/bin/npm &>/dev/null; then
+	curl -sL install-node.vercel.app/lts | bash -s -- --prefix="$INSTALL_DIR" -y
 fi
 
 ##### conda

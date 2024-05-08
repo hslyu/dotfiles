@@ -1,46 +1,5 @@
 PIP3="/usr/bin/python3 -m pip"
 
-if command -v brew &> /dev/null; then
-	if command -v pipx &> /dev/null; then
-		$PIP3 install --user --break-system-packages virtualenv # for Mason.nvim
-		$PIP3 install --user --break-system-packages pynvim
-		npm install -g neovim
-
-		# DAP
-		$PIP3 install --user --break-system-packages debugpy
-
-		# Lint
-		pipx install ruff
-
-		# Formatter
-		pipx install isort
-		pipx install black
-		brew install stylua
-		brew install prettier
-
-		brew install tree-sitter
-
-		# wilder.nvim, telescope.nvim
-		brew install fd
-
-		# ripgrep for telescope.nvim
-		brew install ripgrep
-		brew install viu
-
-		# molten.nvim
-		brew install imagemagick
-		brew install pkg-config  # for magick from luarocks
-		$PIP3 install --user --break-system-packages pynvim jupyter_client cairosvg plotly kaleido pnglatex pyperclip
-
-		exit 0
-	fi
-fi
-
-if [[ $OSTYPE == "darwin"* ]]; then
-	echo "MacOS detected but either brew or pipx is not installed. Exiting."
-	exit 1
-fi
-
 LOCALBIN="$HOME/.local/bin"
 
 $PIP3 install --user --break-system-packages virtualenv # for Mason.nvim
