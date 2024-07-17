@@ -57,6 +57,8 @@ Also, it has many versions of vim configurations.
 On Ubuntu, maybe you need to install some dependencies:
 
 ```bash
+sudo apt update
+sudo apt install -y python3.11-venv  # for neovim's mason.nvim
 # NOTE: change the version number depending on your system's python version.
 /usr/bin/python3 -m pip install pip --upgrade --user
 ```
