@@ -7,7 +7,7 @@ BIN_DIR="${INSTALL_DIR}/bin"
 mkdir -p "${BIN_DIR}"
 
 log() {
-	printf '[light-shell] %s\n' "$*"
+	printf '[dotfiles] %s\n' "$*"
 }
 
 ensure_node() {

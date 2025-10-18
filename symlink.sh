@@ -15,7 +15,7 @@ backup_and_link() {
 
 	mkdir -p "$target_dir"
 	if [[ -e "$dest" || -L "$dest" ]]; then
-		echo "[light-shell] Backing up ${dest} -> ${dest}~"
+		echo "[dotfiles] Backing up ${dest} -> ${dest}~"
 		rm -rf "${dest}~"
 		mv "$dest" "${dest}~"
 	fi
@@ -23,7 +23,7 @@ backup_and_link() {
 	ln -s "${CURRENT_DIR}/${relpath}" "${target_dir}"
 }
 
-echo "[light-shell] Linking core configs"
+echo "[dotfiles] Linking core configs"
 backup_and_link nvim ~/.config
 backup_and_link nvim/.vimrc ~
 backup_and_link nvim-coc ~/.config
@@ -65,4 +65,4 @@ linux-gnu*)
 	;;
 esac
 
-echo "[light-shell] Symlinks created."
+echo "[dotfiles] Symlinks created."

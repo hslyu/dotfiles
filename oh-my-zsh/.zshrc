@@ -154,3 +154,5 @@ zstyle ':completion:*' menu select
 fpath+=~/.zfunc
 
 # Keep wezterm scripts out in the minimal Ubuntu setup.
+
+. "$HOME/.local/bin/env"

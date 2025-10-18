@@ -55,19 +55,20 @@ if ! command -v fd >/dev/null 2>&1; then
 fi
 
 LOCALBIN="${HOME}/.local/bin"
-if ! command -v rg >/dev/null 2>&1; then
-	echo "Installing ripgrep to ${LOCALBIN}"
-	TEMPDIR="$(mktemp -d)"
-	mkdir -p "${LOCALBIN}"
-	curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest |
-		grep "browser_download_url.*-x86_64-unknown-linux-musl.tar.gz" |
-		cut -d : -f 2,3 |
-		tr -d \" |
-		wget -qi - -O - | tar -xz --strip-components=1 -C "${TEMPDIR}"
-	mv "${TEMPDIR}/rg" "${LOCALBIN}"
-	rm -rf "${TEMPDIR}"
+if ! command -v rg &> /dev/null; then
+  echo "ripgrep (rg) could not be found. Installing in $LOCALBIN"
+  mkdir -p "$LOCALBIN"
+  TEMPDIR=$(mktemp -d)
+  curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest \
+    | grep -E 'browser_download_url.*-x86_64-unknown-linux-musl\.tar\.gz"$' \
+    | cut -d : -f 2,3 | tr -d '" ' \
+    | xargs -n1 wget -qO "$TEMPDIR/ripgrep.tar.gz"
+  tar -xzf "$TEMPDIR/ripgrep.tar.gz" --strip-components=1 -C "$TEMPDIR"
+  mv "$TEMPDIR"/rg "$LOCALBIN"
+  rm -f "$TEMPDIR/ripgrep.tar.gz"
+  rm -rf "$TEMPDIR"
 else
-	echo "ripgrep already installed at $(command -v rg)"
+	echo "ripgrep found at $(which rg). Skipping installation."
 fi
 
 echo "Dependencies installed. python-import.nvim will be built automatically by lazy.nvim when the plugin is installed."
