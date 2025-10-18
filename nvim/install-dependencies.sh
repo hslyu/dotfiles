@@ -33,14 +33,9 @@ uv tool install -U ruff
 bun install -g @biomejs/biome
 bun install -g @taplo/cli
 
-echo "Installing CoC (fallback) prerequisites"
+echo "Installing CoC  prerequisites"
 bun install -g neovim
 
-if command -v dotnet >/dev/null 2>&1; then
-	dotnet tool install csharpier -g || true
-else
-	echo "dotnet not found; skipping CSharpier installation."
-fi
 
 if ! command -v stylua >/dev/null 2>&1; then
 	bun install -g @johnnymorganz/stylua-bin
@@ -48,6 +43,10 @@ fi
 
 if ! command -v prettier >/dev/null 2>&1; then
 	bun install -g prettier
+fi
+
+if ! command -v tree-sitter >/dev/null 2>&1; then
+	bun install -g tree-sitter-cli
 fi
 
 if ! command -v fd >/dev/null 2>&1; then

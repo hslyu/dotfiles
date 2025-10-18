@@ -75,9 +75,9 @@ return {
     build = ":MasonUpdate",
     dependencies = {
       {
-        "williamboman/mason.nvim",
+        "mason-org/mason.nvim",
         dependencies = {
-          "williamboman/mason-lspconfig.nvim",
+          "mason-org/mason-lspconfig.nvim",
         },
       },
       {
@@ -154,7 +154,7 @@ return {
     build = ":TSUpdate",
     init = function(plugin)
       require("lazy.core.loader").add_to_rtp(plugin)
-      require("nvim-treesitter.query_predicates")
+      pcall(require, "nvim-treesitter.query_predicates")
     end,
     dependencies = {
       { "nvim-treesitter/nvim-treesitter-textobjects" },
@@ -349,14 +349,17 @@ return {
   },
   {
     "lukas-reineke/indent-blankline.nvim",
-    main = "indent_blankline",
-    config = function()
-      require("indent_blankline").setup({
-        space_char_blankline = " ",
-        show_current_context = true,
-        show_current_context_start = true,
-      })
-    end,
+    main = "ibl",
+    opts = {
+      indent = {
+        char = " ",
+        tab_char = " ",
+      },
+      scope = {
+        enabled = true,
+        show_start = true,
+      },
+    },
   },
   {
     "luukvbaal/statuscol.nvim",

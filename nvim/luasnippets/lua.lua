@@ -1,4 +1,4 @@
-local url_utils = require("kiyoon.utils.url")
+local url_utils = require("kiyoon.url")
 local ls = require("luasnip")
 local fmt = require("luasnip.extras.fmt").fmt
 local extras = require("luasnip.extras")
