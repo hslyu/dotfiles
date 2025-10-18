@@ -156,3 +156,8 @@ fpath+=~/.zfunc
 # Keep wezterm scripts out in the minimal Ubuntu setup.
 
 . "$HOME/.local/bin/env"
+
+# Remove (<conda_env>) ahead of terminal username when activate
+
+export CONDA_CHANGEPS1=false
+
