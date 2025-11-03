@@ -67,7 +67,7 @@ Also, it has many versions of vim configurations.
 
 ```bash
 cd ~/.config	# it doesn't have to be here. Just install anywhere
-git clone https://github.com/kiyoon/dotfiles
+git clone https://github.com/hslyu/dotfiles
 
 # WARNING: ./symlink.sh will override existing dotfiles without validation (but will create a backup).
 # The old dotfiles will be moved with '~' suffix.
