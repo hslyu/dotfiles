@@ -19,7 +19,7 @@ dashboard.section.header.val = {
   [[ \/_/\/_/\/____/\/___/  \/__/    \/_/\/_/\/_/\/_/]] .. neovim_version_str,
 }
 
-local plugins_config_path = vim.fn.stdpath "config" .. "/lua/kiyoon/lazy.lua"
+local plugins_config_path = vim.fn.stdpath "config" .. "/lua/config/lazy.lua"
 dashboard.section.buttons.val = {
   dashboard.button("e", "  New file", ":ene <BAR> startinsert <CR>"),
   dashboard.button("f", "  Find file (\\ff)", ":Telescope find_files hidden=true no_ignore=true<CR>"),
@@ -70,7 +70,7 @@ vim.api.nvim_create_autocmd("User", {
     local stats = require("lazy").stats()
     local ms = (math.floor(stats.startuptime * 100 + 0.5) / 100)
     dashboard.section.footer.val = {
-      "https://github.com/kiyoon/dotfiles",
+      "https://github.com/hslyu/dotfiles",
       "⚡ Neovim loaded " .. stats.count .. " plugins in " .. ms .. "ms",
     }
     pcall(vim.cmd.AlphaRedraw)
