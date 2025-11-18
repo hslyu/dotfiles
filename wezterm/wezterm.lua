@@ -1,9 +1,9 @@
 local wezterm = require("wezterm")
 
 local config = {
-	-- color_scheme = "Dracula (Official)",
-	-- color_scheme = "catppuccin-frappe",
+	color_scheme = "Dracula (Official)",
 
+  enable_wayland = false,
 	font = wezterm.font_with_fallback({
 		-- "Cascadia Code NF",
 		"JetBrainsMono Nerd Font",
@@ -11,9 +11,9 @@ local config = {
 	}),
 	font_size = 14.3,
 
-	max_fps = 120,
+	max_fps = 60,
 
-	window_decorations = "RESIZE",
+	window_decorations = "NONE",
 
 	-- undercurl becomes ugly if underline_position < -4
 	underline_position = -4,
@@ -582,7 +582,7 @@ config.colors.tab_bar = {
 	},
 }
 
-config.window_background_opacity = 0.85
+config.window_background_opacity = 1
 config.macos_window_background_blur = 20
 
 if wezterm.target_triple == "x86_64-pc-windows-msvc" then
