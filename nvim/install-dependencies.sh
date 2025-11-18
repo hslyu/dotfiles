@@ -70,4 +70,5 @@ else
 	echo "ripgrep found at $(which rg). Skipping installation."
 fi
 
+nvim --headless "+Lazy! sync" "+Lazy! load nvim-treesitter" "+TSUpdateSync" +qa
 echo "Dependencies installed. python-import.nvim will be built automatically by lazy.nvim when the plugin is installed."
