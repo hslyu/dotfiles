@@ -22,7 +22,7 @@ local function treesitter_incwhitespaces(info)
   return false
 end
 
-require("nvim-treesitter.configs").setup({
+require("nvim-treesitter.config").setup({
   -- vim-matchup
   matchup = {
     enable = true, -- mandatory, false will disable the whole extension
@@ -314,7 +314,7 @@ require("nvim-treesitter.configs").setup({
   },
 })
 
-local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
+local ts_repeat_move = require("nvim-treesitter-textobjects.repeatable_move")
 
 -- Repeat movement with ; and ,
 -- ensure ; goes forward and , goes backward, regardless of the last direction
