@@ -323,43 +323,19 @@ return {
   },
   {
     "lukas-reineke/indent-blankline.nvim",
-    tag = "v2.20.8",
-    -- main = "ibl",
-    -- opts = {},
+    main = "ibl",
     event = "BufReadPost",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
     config = function()
       vim.opt.list = true
-      --vim.opt.listchars:append "space:⋅"
-      --vim.opt.listchars:append "eol:↴"
 
-      -- local highlight = {
-      --   "RainbowDelimiterRed",
-      --   "RainbowDelimiterOrange",
-      --   "RainbowDelimiterYellow",
-      --   "RainbowDelimiterGreen",
-      --   "RainbowDelimiterBlue",
-      --   "RainbowDelimiterCyan",
-      --   "RainbowDelimiterViolet",
-      -- }
-      -- local hooks = require "ibl.hooks"
-      -- -- create the highlight groups in the highlight setup hook, so they are reset
-      -- -- every time the colorscheme changes
-      -- hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
-      --     vim.api.nvim_set_hl(0, "RainbowRed", { fg = "#E06C75" })
-      --     vim.api.nvim_set_hl(0, "RainbowYellow", { fg = "#E5C07B" })
-      --     vim.api.nvim_set_hl(0, "RainbowBlue", { fg = "#61AFEF" })
-      --     vim.api.nvim_set_hl(0, "RainbowOrange", { fg = "#D19A66" })
-      --     vim.api.nvim_set_hl(0, "RainbowGreen", { fg = "#98C379" })
-      --     vim.api.nvim_set_hl(0, "RainbowViolet", { fg = "#C678DD" })
-      --     vim.api.nvim_set_hl(0, "RainbowCyan", { fg = "#56B6C2" })
-      -- end)
-      --
-      -- require("ibl").setup { scope = { highlight = highlight } }
-      -- hooks.register(hooks.type.SCOPE_HIGHLIGHT, hooks.builtin.scope_highlight_from_extmark)
-      require("indent_blankline").setup({
-        space_char_blankline = " ",
-        show_current_context = true,
-        show_current_context_start = true,
+      require("ibl").setup({
+        indent = { char = "│" },
+        scope = {
+          enabled = true,
+          show_start = true,
+          show_end = false,
+        },
       })
     end,
   },
@@ -840,8 +816,9 @@ return {
           pattern = [[\b(KEYWORDS)(\(\w*\))*:]],
         },
       })
-      local tstext = require("nvim-treesitter.textobjects.repeatable_move")
-      local next_todo, prev_todo = tstext.make_repeatable_move_pair(todo_comments.jump_next, todo_comments.jump_prev)
+      local tstext = require("nvim-treesitter-textobjects.repeatable_move")
+      local next_todo = tstext.make_repeatable_move(todo_comments.jump_next)
+      local prev_todo = tstext.make_repeatable_move(todo_comments.jump_prev)
       vim.keymap.set("n", "]t", next_todo, { desc = "Next todo comment" })
 
       vim.keymap.set("n", "[t", prev_todo, { desc = "Previous todo comment" })
