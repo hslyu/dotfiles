@@ -1,6 +1,6 @@
 export TZ=Asia/Seoul
 
-for candidate in "$HOME/mambaforge" "$HOME/miniforge3" "$HOME/miniconda3"; do
+for candidate in "$HOME/bin/mambaforge" "$HOME/bin/miniforge3" "$HOME/bin/miniconda3"; do
 	if [[ -d "$candidate" ]]; then
 		export MAMBA_ROOT_PREFIX="$candidate"
 		break
@@ -26,6 +26,7 @@ done
 # <<< conda initialize <<<
 
 # >>> mamba initialize >>>
+export CONDA_CHANGEPS1=false
 # !! Contents within this block are managed by 'mamba shell init' !!
 if [[ -n "$MAMBA_ROOT_PREFIX" && -x "$MAMBA_ROOT_PREFIX/bin/mamba" ]]; then
 	export MAMBA_EXE="$MAMBA_ROOT_PREFIX/bin/mamba"
