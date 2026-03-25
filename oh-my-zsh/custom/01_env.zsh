@@ -1,11 +1,16 @@
 export TZ=Asia/Seoul
 
-for candidate in "$HOME/bin/mambaforge" "$HOME/bin/miniforge3" "$HOME/bin/miniconda3"; do
-	if [[ -d "$candidate" ]]; then
-		export MAMBA_ROOT_PREFIX="$candidate"
-		break
-	fi
-done
+if [[ -d "$HOME/bin/miniforge3" ]]; then
+	export MAMBA_ROOT_PREFIX="$HOME/bin/miniforge3"
+elif [[ -d "$HOME/miniforge3" ]]; then
+	export MAMBA_ROOT_PREFIX="$HOME/miniforge3"
+elif [[ -d "$HOME/bin/miniconda3" ]]; then
+	export MAMBA_ROOT_PREFIX="$HOME/bin/miniconda3"
+elif [[ -d "$HOME/miniconda3" ]]; then
+	export MAMBA_ROOT_PREFIX="$HOME/anaconda3"
+elif [[ -d "$HOME/anaconda3" ]]; then
+	export MAMBA_ROOT_PREFIX="$HOME/miniconda3"
+fi
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -39,9 +44,14 @@ if [[ -n "$MAMBA_ROOT_PREFIX" && -x "$MAMBA_ROOT_PREFIX/bin/mamba" ]]; then
 fi
 # <<< mamba initialize <<<
 
-export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 export MANPATH="$HOME/.local/share/man:$MANPATH"
+
+# if cargo is installed, add cargo bin to path
+if [[ -f "$HOME/.cargo/env" ]]; then
+    source "$HOME/.cargo/env"
+fi
 
 if [[ -d "$HOME/.local/share/terminfo" ]]; then
 	export TERMINFO="$HOME/.local/share/terminfo" # tmux needs this
