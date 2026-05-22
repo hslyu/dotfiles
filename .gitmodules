@@ -25,3 +25,9 @@
 [submodule "oh-my-zsh/custom/plugins/fast-syntax-highlighting"]
 	path = oh-my-zsh/custom/plugins/fast-syntax-highlighting
   url = https://github.com/zdharma-continuum/fast-syntax-highlighting
+[submodule "codex/skill-sources/andrej-karpathy-skills"]
+	path = codex/skill-sources/andrej-karpathy-skills
+	url = https://github.com/forrestchang/andrej-karpathy-skills.git
+[submodule "codex/skill-sources/academic-research-skills-codex"]
+	path = codex/skill-sources/academic-research-skills-codex
+	url = https://github.com/Imbad0202/academic-research-skills-codex.git
