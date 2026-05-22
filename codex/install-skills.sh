@@ -12,7 +12,7 @@ log() {
 
 install_skill() {
 	local name="$1"
-	local src="${SCRIPT_DIR}/skills/${name}"
+	local src="$2"
 	local dest="${SKILLS_DIR}/${name}"
 
 	if [[ ! -d "${src}" ]]; then
@@ -25,9 +25,23 @@ install_skill() {
 	rsync -a --delete "${src}/" "${dest}/"
 }
 
+ensure_submodules() {
+	if [[ ! -d "${SCRIPT_DIR}/../.git" ]]; then
+		return
+	fi
+
+	git -C "${SCRIPT_DIR}/.." submodule update --init --recursive \
+		codex/skill-sources/andrej-karpathy-skills \
+		codex/skill-sources/academic-research-skills-codex
+}
+
 mkdir -p "${SKILLS_DIR}"
 
-install_skill karpathy-guidelines
-install_skill academic-research-suite
+ensure_submodules
+
+install_skill karpathy-guidelines \
+	"${SCRIPT_DIR}/skill-sources/andrej-karpathy-skills/skills/karpathy-guidelines"
+install_skill academic-research-suite \
+	"${SCRIPT_DIR}/skill-sources/academic-research-skills-codex/skills/academic-research-suite"
 
 log "Codex skills installed under ${SKILLS_DIR}."

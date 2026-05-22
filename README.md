@@ -73,6 +73,7 @@ git clone https://github.com/hslyu/dotfiles
 # The old dotfiles will be moved with '~' suffix.
 # Use with care if you configured something manually.
 cd dotfiles
+git submodule update --init --recursive
 ./symlink.sh
 ```
 
@@ -96,7 +97,7 @@ See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
 3. Install Codex
 
-`oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex` and installs the vendored Codex skills:
+`oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex` and installs Codex skills from git submodules:
 
 - `karpathy-guidelines`
 - `academic-research-suite`
