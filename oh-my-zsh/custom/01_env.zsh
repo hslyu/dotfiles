@@ -28,10 +28,10 @@ fi
 # if [ -f "$MINICONDA_PATH/etc/profile.d/mamba.sh" ]; then
 #     . "$MINICONDA_PATH/etc/profile.d/mamba.sh"
 # fi
-# <<< conda initialize <<<
-
 # >>> mamba initialize >>>
 export CONDA_CHANGEPS1=false
+export MAMBA_CHANGEPS1=false
+
 # !! Contents within this block are managed by 'mamba shell init' !!
 if [[ -n "$MAMBA_ROOT_PREFIX" && -x "$MAMBA_ROOT_PREFIX/bin/mamba" ]]; then
 	export MAMBA_EXE="$MAMBA_ROOT_PREFIX/bin/mamba"

@@ -153,9 +153,5 @@ autoload -Uz compinit
 zstyle ':completion:*' menu select
 fpath+=~/.zfunc
 
-# Keep wezterm scripts out in the minimal Ubuntu setup.
-
-# Remove (<conda_env>) ahead of terminal username when activate
-
-export CONDA_CHANGEPS1=false
-
+alias gpu0="CUDA_VISIBLE_DEVICES=0"
+alias gpu1="CUDA_VISIBLE_DEVICES=1"
