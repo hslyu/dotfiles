@@ -103,6 +103,21 @@ setup_basedpyright_tools() {
 	)
 }
 
+ensure_codex() {
+	if ! command -v npm >/dev/null 2>&1; then
+		log "Skip installing Codex CLI (requires npm)."
+		return
+	fi
+
+	log "Installing/updating Codex CLI..."
+	npm config set prefix "${INSTALL_DIR}"
+	npm install -g @openai/codex
+
+	if [[ -x "${SCRIPT_DIR}/../codex/install-skills.sh" ]]; then
+		"${SCRIPT_DIR}/../codex/install-skills.sh"
+	fi
+}
+
 ensure_oh_my_zsh
 ensure_starship
 ensure_zoxide
@@ -110,5 +125,6 @@ ensure_fzf
 ensure_bun
 ensure_thefuck
 setup_basedpyright_tools
+ensure_codex
 
 log "All optional tools checked."

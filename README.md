@@ -94,7 +94,26 @@ Open your terminal again and you'll see you're running zsh.
 
 See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
-3. Install neovim and tmux
+3. Install Codex
+
+`oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex` and installs the vendored Codex skills:
+
+- `karpathy-guidelines`
+- `academic-research-suite`
+
+To reinstall just the skills:
+
+```bash
+bash codex/install-skills.sh
+```
+
+Authenticate on a new machine with:
+
+```bash
+codex login
+```
+
+4. Install neovim and tmux
 
 You need Neovim v0.11.3.
 
@@ -118,7 +137,7 @@ Install tmux plugins:
 bash tmux/install-plugins.sh
 ```
 
-4. Install others
+5. Install others
 
 ```bash
 # You might want to symlink dotfiles again in case some scripts overrode them
@@ -129,7 +148,7 @@ bash tmux/install-plugins.sh
 wezterm/terminfo.sh
 ```
 
-5. Install / Update dotfiles, apps, plugins etc.
+6. Install / Update dotfiles, apps, plugins etc.
 
 ```zsh
 # WARNING: This includes calling ./symlink.sh so the dotfile symlinks will be updated.
