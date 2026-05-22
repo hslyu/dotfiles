@@ -207,7 +207,7 @@ function M.lsp_keymaps(bufnr)
   local prev_err = function()
     vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR })
   end
-  local status, tsrepeat = pcall(require, "nvim-treesitter.textobjects.repeatable_move")
+  local status, tsrepeat = pcall(require, "nvim-treesitter-textobjects.repeatable_move")
   if status then
     next_warn, prev_warn = tsrepeat.make_repeatable_move_pair(next_warn, prev_warn)
     next_err, prev_err = tsrepeat.make_repeatable_move_pair(next_err, prev_err)
