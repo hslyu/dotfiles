@@ -257,8 +257,7 @@ return {
     dependencies = {
       {
         "nvim-treesitter/nvim-treesitter-textobjects",
-        -- "kiyoon/nvim-treesitter-textobjects",
-        -- branch = "fix/builtin_find",
+        branch = "main",
         dev = nvim_treesitter_textobjects_dev,
       },
       "RRethy/nvim-treesitter-endwise",
