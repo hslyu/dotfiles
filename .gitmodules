@@ -31,3 +31,6 @@
 [submodule "codex/skill-sources/academic-research-skills-codex"]
 	path = codex/skill-sources/academic-research-skills-codex
 	url = https://github.com/Imbad0202/academic-research-skills-codex.git
+[submodule "codex/skill-sources/academic-writing-principles"]
+	path = codex/skill-sources/academic-writing-principles
+	url = git@github.com:hslyu/academic-writing-principles.git
