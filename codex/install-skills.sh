@@ -32,7 +32,8 @@ ensure_submodules() {
 
 	git -C "${SCRIPT_DIR}/.." submodule update --init --recursive \
 		codex/skill-sources/andrej-karpathy-skills \
-		codex/skill-sources/academic-research-skills-codex
+		codex/skill-sources/academic-research-skills-codex \
+		codex/skill-sources/academic-writing-principles
 }
 
 mkdir -p "${SKILLS_DIR}"
@@ -43,5 +44,7 @@ install_skill karpathy-guidelines \
 	"${SCRIPT_DIR}/skill-sources/andrej-karpathy-skills/skills/karpathy-guidelines"
 install_skill academic-research-suite \
 	"${SCRIPT_DIR}/skill-sources/academic-research-skills-codex/skills/academic-research-suite"
+install_skill academic-writing-principles \
+	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-principles"
 
 log "Codex skills installed under ${SKILLS_DIR}."
