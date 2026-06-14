@@ -38,6 +38,11 @@ if [[ -f "${CURRENT_DIR}/codex/AGENTS.md" ]]; then
 	backup_and_link codex/AGENTS.md ~/.codex
 fi
 
+if [[ -f "${CURRENT_DIR}/codex/config.toml" ]]; then
+	mkdir -p ~/.codex
+	backup_and_link codex/config.toml ~/.codex
+fi
+
 if [[ -d "${CURRENT_DIR}/wezterm" ]]; then
 	backup_and_link wezterm ~/.config
 fi
