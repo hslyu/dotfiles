@@ -1,0 +1,13 @@
+name: paper
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - tectonic
+  - texlive-core
+  - latexmk
+  - pdflatex
+  - pylatex
+  - bibtexparser
+  - pyyaml
