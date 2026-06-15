@@ -25,6 +25,16 @@ install_skill() {
 	rsync -a --delete "${src}/" "${dest}/"
 }
 
+remove_stale_skill() {
+	local name="$1"
+	local dest="${SKILLS_DIR}/${name}"
+
+	if [[ -d "${dest}" ]]; then
+		log "Removing stale Codex skill: ${name}"
+		rm -rf "${dest}"
+	fi
+}
+
 ensure_submodules() {
 	if [[ ! -d "${SCRIPT_DIR}/../.git" ]]; then
 		return
@@ -40,11 +50,17 @@ mkdir -p "${SKILLS_DIR}"
 
 ensure_submodules
 
+remove_stale_skill academic-writing-principles
+
 install_skill karpathy-guidelines \
 	"${SCRIPT_DIR}/skill-sources/andrej-karpathy-skills/skills/karpathy-guidelines"
 install_skill academic-research-suite \
 	"${SCRIPT_DIR}/skill-sources/academic-research-skills-codex/skills/academic-research-suite"
-install_skill academic-writing-principles \
-	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-principles"
+install_skill academic-writing-plan \
+	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-plan"
+install_skill academic-writing-write \
+	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-write"
+install_skill academic-writing-review \
+	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-review"
 
 log "Codex skills installed under ${SKILLS_DIR}."
