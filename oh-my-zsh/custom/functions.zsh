@@ -144,6 +144,21 @@ git_amend_author() {
 	git commit --amend --author="Kiyoon Kim <kiyoon@users.noreply.github.com>"
 }
 
+paper() {
+	if [ $# -ne 1 ]; then
+		echo "Usage: paper <tex file>"
+		return 1
+	fi
+
+	if [ ! -f "$1" ]; then
+		echo "File not found: $1"
+		return 1
+	fi
+
+	mkdir -p results
+	mamba run -n paper tectonic --keep-intermediates --keep-logs --outdir results "$1"
+}
+
 get_sum_bytes() {
 	# Calculate the total size of files/directories
 	infiles=("${@:1}")
