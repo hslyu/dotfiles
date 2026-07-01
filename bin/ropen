@@ -1,0 +1,215 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MODE="open"
+MKDIR=1
+
+PORT="${ROPEN_PORT:-2222}"
+HOST="${ROPEN_HOST:-localhost}"
+TARGET="${ROPEN_USER:+${ROPEN_USER}@}${HOST}"
+CONTROL_PATH="/tmp/ropen-ssh-${USER}-${PORT}-%r@%h"
+KNOWN_HOSTS="$HOME/.ssh/ropen_known_hosts"
+
+usage() {
+	cat >&2 <<'USAGE'
+usage:
+  ropen login
+  ropen [--no-mkdir] FILE
+  ropen --install-key
+
+environment:
+  ROPEN_PORT  reverse SSH tunnel port, default: 2222
+  ROPEN_HOST  reverse SSH tunnel host, default: localhost
+  ROPEN_USER  local machine user, when different from the remote user
+USAGE
+}
+
+die() {
+	printf 'ropen: %s\n' "$*" >&2
+	exit 1
+}
+
+quote() {
+	printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+parse_args() {
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		login | --install-key)
+			MODE="login"
+			shift
+			break
+			;;
+		--no-mkdir)
+			MKDIR=0
+			shift
+			;;
+		-h | --help)
+			usage
+			exit 0
+			;;
+		--*)
+			usage
+			die "unknown option: $1"
+			;;
+		*)
+			break
+			;;
+		esac
+	done
+
+	if [[ "$MODE" == "login" && $# -gt 0 ]]; then
+		usage
+		die "login does not accept file arguments"
+	fi
+	if [[ "$MODE" == "open" && $# -ne 1 ]]; then
+		usage
+		exit 2
+	fi
+
+	if [[ "$MODE" == "open" ]]; then
+		FILE="$1"
+	fi
+}
+
+pick_key() {
+	PRIVATE_KEY=""
+	PUBLIC_KEY=""
+
+	if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+		PRIVATE_KEY="$HOME/.ssh/id_ed25519"
+		PUBLIC_KEY="$HOME/.ssh/id_ed25519.pub"
+	elif [[ -f "$HOME/.ssh/id_rsa.pub" ]]; then
+		PRIVATE_KEY="$HOME/.ssh/id_rsa"
+		PUBLIC_KEY="$HOME/.ssh/id_rsa.pub"
+	fi
+
+	return 0
+}
+
+ensure_ssh_dir() {
+	mkdir -p "$HOME/.ssh"
+	chmod 700 "$HOME/.ssh"
+}
+
+ensure_key() {
+	pick_key
+	if [[ -n "$PUBLIC_KEY" ]]; then
+		return
+	fi
+
+	ensure_ssh_dir
+	ssh-keygen -t ed25519 -N "" -f "$HOME/.ssh/id_ed25519" -C "${USER}@$(hostname)-ropen"
+	PRIVATE_KEY="$HOME/.ssh/id_ed25519"
+	PUBLIC_KEY="$HOME/.ssh/id_ed25519.pub"
+}
+
+ssh_opts() {
+	local opts=(
+		-p "$PORT"
+		-o ConnectTimeout=5
+		-o ControlMaster=auto
+		-o ControlPersist=60
+		-o ControlPath="$CONTROL_PATH"
+		-o IdentitiesOnly=yes
+		-o NumberOfPasswordPrompts=1
+		-o PreferredAuthentications=publickey,password,keyboard-interactive
+		-o StrictHostKeyChecking=accept-new
+		-o UserKnownHostsFile="$KNOWN_HOSTS"
+	)
+
+	if [[ -n "${PRIVATE_KEY:-}" && -f "$PRIVATE_KEY" ]]; then
+		opts+=(-i "$PRIVATE_KEY")
+	fi
+
+	printf '%s\0' "${opts[@]}"
+}
+
+run_ssh() {
+	local -a opts
+	ensure_ssh_dir
+	mapfile -d '' -t opts < <(ssh_opts)
+	ssh "${opts[@]}" "$TARGET" "$@"
+}
+
+base64_decode_script='
+if base64 -d </dev/null >/dev/null 2>&1; then
+	base64 -d
+else
+	base64 -D
+fi
+'
+
+explain_connection_failure() {
+	cat >&2 <<MSG
+ropen: cannot reach the local machine through ${HOST}:${PORT}.
+Open the SSH session from the local machine with:
+  ssh -R ${PORT}:localhost:22 <user>@<server>
+
+On macOS, also make sure:
+  System Settings -> General -> Sharing -> Remote Login -> ON
+MSG
+}
+
+login() {
+	ensure_key
+
+	local cmd
+	cmd="sh -c $(quote "
+set -eu
+key=\$($base64_decode_script)
+mkdir -p \"\$HOME/.ssh\"
+auth=\"\$HOME/.ssh/authorized_keys\"
+touch \"\$auth\"
+grep -qxF \"\$key\" \"\$auth\" || printf '%s\n' \"\$key\" >> \"\$auth\"
+chmod 700 \"\$HOME/.ssh\"
+chmod 600 \"\$auth\"
+echo \"installed ropen key in \$auth\"
+")"
+
+	if ! base64 <"$PUBLIC_KEY" | run_ssh "$cmd"; then
+		explain_connection_failure
+		exit 1
+	fi
+}
+
+open_file() {
+	pick_key
+
+	[[ -e "$FILE" ]] || die "file not found: $FILE"
+
+	local file base local_dir local_file cmd
+	file="$(realpath "$FILE")"
+	base="$(basename "$file")"
+	local_dir="/tmp/ropen-${USER}"
+	local_file="${local_dir}/${base}"
+
+	cmd="ROPEN_MKDIR=$(quote "$MKDIR") ROPEN_DIR=$(quote "$local_dir") ROPEN_FILE=$(quote "$local_file") sh -c $(quote "
+set -eu
+
+if [ \"\$ROPEN_MKDIR\" = \"1\" ]; then
+	[ -d \"\$ROPEN_DIR\" ] || mkdir -p \"\$ROPEN_DIR\"
+elif [ ! -d \"\$ROPEN_DIR\" ]; then
+	echo \"ropen: local directory does not exist: \$ROPEN_DIR\" >&2
+	exit 1
+fi
+
+($base64_decode_script) > \"\$ROPEN_FILE\"
+open \"\$ROPEN_FILE\" >/dev/null 2>&1 &
+echo \"opened \$ROPEN_FILE\"
+")"
+
+	if ! base64 <"$file" | run_ssh "$cmd"; then
+		explain_connection_failure
+		exit 1
+	fi
+}
+
+parse_args "$@"
+
+case "$MODE" in
+login) login ;;
+open) open_file ;;
+*) die "unknown mode: $MODE" ;;
+esac

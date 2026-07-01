@@ -51,9 +51,17 @@ if [[ -d "${CURRENT_DIR}/helix" ]]; then
 	backup_and_link helix ~/.config
 fi
 
+if [[ -d "${CURRENT_DIR}/yazi" ]]; then
+	backup_and_link yazi ~/.config
+fi
+
 if [[ -f "${CURRENT_DIR}/cargo/config.toml" ]]; then
 	mkdir -p ~/.cargo
 	backup_and_link cargo/config.toml ~/.cargo
+fi
+
+if [[ -f "${CURRENT_DIR}/bin/ropen" ]]; then
+	backup_and_link bin/ropen ~/.local/bin
 fi
 
 if [[ -f "${CURRENT_DIR}/conda/.condarc" ]]; then
