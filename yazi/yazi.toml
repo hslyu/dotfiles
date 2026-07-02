@@ -11,6 +11,17 @@ image_delay = 100
 image_quality = 75
 image_filter = "triangle"
 
+[opener]
+noop = [
+	{ run = "true" },
+]
+
+[open]
+prepend_rules = [
+	{ mime = "application/pdf", use = "noop" },
+	{ url = "*.pdf", use = "noop" },
+]
+
 [plugin]
 prepend_preloaders = [
 	{ url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
