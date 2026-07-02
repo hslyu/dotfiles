@@ -65,7 +65,9 @@ After that, open files from the remote server:
 ```bash
 ropen paper.pdf
 ropen figure.png
+ropen -n paper.pdf
 ```
 
 macOS decides which local app opens the file based on the copied file's
-extension.
+extension. Use `-n` or `--no-open` to only copy the file. Copied files are saved in the
+local Mac's `~/Downloads` directory.
