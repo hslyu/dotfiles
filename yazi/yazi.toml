@@ -15,11 +15,12 @@ image_filter = "triangle"
 noop = [
 	{ run = "true" },
 ]
+ropen = [{ run = 'ropen "$@"', desc = "Open with ropen" }]
 
 [open]
 prepend_rules = [
-	{ mime = "application/pdf", use = "noop" },
-	{ url = "*.pdf", use = "noop" },
+	{ mime = "application/pdf", use = "ropen" },
+	{ url = "*.pdf", use = "ropen" },
 ]
 
 [plugin]
