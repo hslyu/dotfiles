@@ -1,32 +1,32 @@
 [mgr]
 # Give the preview pane more room; useful for PDF/image previews.
-ratio = [1, 3, 5]
+ratio = [1, 2, 5]
 
 [preview]
 # Large LaTeX figure PDFs can create huge preview cache images and make the
 # preview pane flicker or blank while moving the cursor.
-max_width = 1600
-max_height = 1600
+max_width = 1200
+max_height = 1200
 image_delay = 100
-image_quality = 75
+image_quality = 70
 image_filter = "triangle"
 
 [opener]
-noop = [
-	{ run = "true" },
-]
+noop = [{ run = "true" }]
 ropen = [{ run = 'ropen "$@"', desc = "Open with ropen" }]
 
 [open]
 prepend_rules = [
-	{ mime = "application/pdf", use = "ropen" },
-	{ url = "*.pdf", use = "ropen" },
+  { mime = "application/pdf", use = "ropen" },
+  { url = "*.pdf", use = "ropen" },
 ]
 
 [plugin]
 prepend_preloaders = [
-	{ url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
+  { url = "/home/hslyu/research/SSIR/results/figures/*.pdf", run = "pdf-lite" },
+  { url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
 ]
 prepend_previewers = [
-	{ url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
+  { url = "/home/hslyu/research/SSIR/results/figures/*.pdf", run = "pdf-lite" },
+  { url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
 ]
