@@ -57,8 +57,9 @@ ensure_miniforge() {
 
 ensure_rustup() {
 	if command -v rustc >/dev/null 2>&1; then
-		log "rustup toolchain already present, skipping bootstrap."
+		log "rustup toolchain already present, updating stable toolchain."
 		rustup self update || true
+		rustup update stable
 	else
 		log "Installing rustup with default stable toolchain..."
 		curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y

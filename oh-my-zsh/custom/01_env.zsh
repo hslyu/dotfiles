@@ -44,6 +44,14 @@ if [[ -n "$MAMBA_ROOT_PREFIX" && -x "$MAMBA_ROOT_PREFIX/bin/mamba" ]]; then
 fi
 # <<< mamba initialize <<<
 
+# TeX Live installed locally, outside mamba/conda.
+if [[ -d "$HOME/texlive/2026/bin/x86_64-linux" ]]; then
+	export TEXLIVE_HOME="$HOME/texlive/2026"
+	export PATH="$TEXLIVE_HOME/bin/x86_64-linux:$PATH"
+	export MANPATH="$TEXLIVE_HOME/texmf-dist/doc/man:$MANPATH"
+	export INFOPATH="$TEXLIVE_HOME/texmf-dist/doc/info:$INFOPATH"
+fi
+
 export PATH="$HOME/.local/bin:$PATH"
 export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 export MANPATH="$HOME/.local/share/man:$MANPATH"

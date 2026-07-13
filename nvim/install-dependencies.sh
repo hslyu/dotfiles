@@ -12,6 +12,11 @@ require_cmd() {
 
 require_cmd uv "curl -LsSf https://astral.sh/uv/install.sh | sh"
 require_cmd bun "curl -fsSL https://bun.sh/install | bash"
+require_cmd cargo "https://www.rust-lang.org/tools/install"
+
+fd_works() {
+	fd --version 2>/dev/null | grep -q "^fd "
+}
 
 VENV="${HOME}/.virtualenvs/neovim"
 if [[ -f "${VENV}" ]]; then
@@ -49,8 +54,11 @@ if ! command -v tree-sitter >/dev/null 2>&1; then
 	bun install -g tree-sitter-cli
 fi
 
-if ! command -v fd >/dev/null 2>&1; then
-	bun install -g fd-find
+if ! fd_works; then
+	if [[ "$(command -v fd 2>/dev/null || true)" == "$HOME/.bun/bin/fd" ]]; then
+		rm -f "$HOME/.bun/bin/fd"
+	fi
+	cargo install fd-find
 fi
 
 LOCALBIN="${HOME}/.local/bin"
