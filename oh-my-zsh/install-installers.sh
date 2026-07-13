@@ -78,11 +78,22 @@ ensure_cargo_binstall() {
 		https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 }
 
+ensure_yazi() {
+	if yazi --version >/dev/null 2>&1 && ya --version >/dev/null 2>&1; then
+		log "Yazi already installed."
+		return
+	fi
+
+	log "Building Yazi from source..."
+	cargo install --force yazi-build
+}
+
 ensure_node
 ensure_bun
 ensure_uv
 ensure_miniforge
 ensure_rustup
 ensure_cargo_binstall
+ensure_yazi
 
 log "Bootstrap installers complete."
