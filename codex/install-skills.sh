@@ -10,6 +10,35 @@ log() {
 	printf '[dotfiles] %s\n' "$*"
 }
 
+install_global_instructions() {
+	local src="${SCRIPT_DIR}/AGENTS.md"
+	local dest="${CODEX_HOME}/AGENTS.md"
+	local backup="${dest}~"
+
+	if [[ ! -f "${src}" ]]; then
+		log "Skip global Codex instructions (source file not found)."
+		return
+	fi
+
+	if [[ -L "${dest}" && "$(readlink "${dest}")" == "${src}" ]]; then
+		log "Global Codex instructions already linked."
+		return
+	fi
+
+	if [[ -e "${dest}" || -L "${dest}" ]]; then
+		if [[ -e "${backup}" || -L "${backup}" ]]; then
+			log "Cannot back up ${dest}: ${backup} already exists."
+			return 1
+		fi
+
+		log "Backing up ${dest} -> ${backup}"
+		mv "${dest}" "${backup}"
+	fi
+
+	log "Installing global Codex instructions."
+	ln -s "${src}" "${dest}"
+}
+
 install_skill() {
 	local name="$1"
 	local src="$2"
@@ -49,6 +78,7 @@ ensure_submodules() {
 mkdir -p "${SKILLS_DIR}"
 
 ensure_submodules
+install_global_instructions
 
 remove_stale_skill academic-writing-principles
 
@@ -63,4 +93,4 @@ install_skill academic-writing-write \
 install_skill academic-writing-review \
 	"${SCRIPT_DIR}/skill-sources/academic-writing-principles/skills/academic-writing-review"
 
-log "Codex skills installed under ${SKILLS_DIR}."
+log "Codex instructions and skills installed under ${CODEX_HOME}."

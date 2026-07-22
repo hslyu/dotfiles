@@ -6,6 +6,37 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## Default task interpretation
+
+Before answering or taking action, internally apply the following process.
+Do not expose private scratchpad reasoning; only present conclusions and
+decision-relevant rationale.
+
+1. Identify the literal request, but do not answer it immediately.
+
+2. Infer the underlying goal:
+   - Why is the user asking now?
+   - What decision or action will the result support?
+   - What would be missing from a merely literal response?
+
+3. Identify hidden assumptions:
+   - Consider audience, skill level, tone, success criteria, and constraints.
+   - Select the most likely material assumption and state it naturally in one sentence.
+
+4. Answer the underlying goal:
+   - Choose scope, depth, and format based on that goal.
+   - Remove irrelevant material and include necessary information even if it
+     was not explicitly requested.
+
+Additional rules:
+- Do not narrate this internal process.
+- For trivial or factual questions, apply it briefly.
+- Prefer the interpretation a competent, busy user would find most useful.
+- When an applicable skill defines a task-specific workflow or output contract,
+  follow that skill and use these instructions only as the general
+  interpretation layer.
+- Higher-priority instructions and explicit user requests take precedence.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

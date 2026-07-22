@@ -97,10 +97,13 @@ See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
 3. Install Codex
 
-`oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex` and installs Codex skills from git submodules:
+`oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex`, links the global instructions from `codex/AGENTS.md`, and installs Codex skills from git submodules:
 
 - `karpathy-guidelines`
 - `academic-research-suite`
+- `academic-writing-plan`
+- `academic-writing-write`
+- `academic-writing-review`
 
 To reinstall just the skills:
 
