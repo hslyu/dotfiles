@@ -10,6 +10,20 @@ log() {
 	printf '[dotfiles] %s\n' "$*"
 }
 
+install_personal_launcher() {
+	local src="${SCRIPT_DIR}/codex-personal"
+	local dest="${HOME}/.local/bin/codex-personal"
+
+	if [[ ! -f "${src}" ]]; then
+		log "Skip personal Codex launcher (source file not found)."
+		return
+	fi
+
+	mkdir -p "$(dirname "${dest}")"
+	install -m 755 "${src}" "${dest}"
+	log "Installed personal Codex launcher at ${dest}."
+}
+
 install_global_instructions() {
 	local src="${SCRIPT_DIR}/AGENTS.md"
 	local dest="${CODEX_HOME}/AGENTS.md"
@@ -78,6 +92,7 @@ ensure_submodules() {
 mkdir -p "${SKILLS_DIR}"
 
 ensure_submodules
+install_personal_launcher
 install_global_instructions
 
 remove_stale_skill academic-writing-principles

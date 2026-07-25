@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+personal_codex_home="${CODEX_PERSONAL_HOME:-$HOME/.codex-personal}"
+mkdir -p "$personal_codex_home"
+
+exec env CODEX_HOME="$personal_codex_home" codex "$@"
