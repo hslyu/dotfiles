@@ -36,6 +36,7 @@ PACKAGES=(
 	xcolor
 	caption
 	subfig
+	adjustbox
 	sttools
 	dblfloatfix
 	booktabs
