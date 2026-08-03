@@ -23,10 +23,8 @@ prepend_rules = [
 
 [plugin]
 prepend_preloaders = [
-  { url = "/home/hslyu/research/SSIR/results/figures/*.pdf", run = "pdf-lite" },
-  { url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
+  { mime = "application/pdf", run = "pdf-lite" },
 ]
 prepend_previewers = [
-  { url = "/home/hslyu/research/SSIR/results/figures/*.pdf", run = "pdf-lite" },
-  { url = "/home/hslyu/research/SSIR/LATEX-SSIR/figures/*.pdf", run = "pdf-lite" },
+  { mime = "application/pdf", run = "pdf-lite" },
 ]
