@@ -113,9 +113,6 @@ ensure_codex() {
 	npm config set prefix "${INSTALL_DIR}"
 	npm install -g @openai/codex
 
-	if [[ -x "${SCRIPT_DIR}/../codex/install-skills.sh" ]]; then
-		"${SCRIPT_DIR}/../codex/install-skills.sh"
-	fi
 }
 
 ensure_oh_my_zsh

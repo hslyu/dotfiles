@@ -15,10 +15,6 @@ if ! command -v codex >/dev/null 2>&1; then
 	exit 1
 fi
 
-log "Installing the personal launcher and Codex setup for both accounts."
-CODEX_HOME="${PERSONAL_CODEX_HOME}" bash "${SCRIPT_DIR}/install-skills.sh"
-CODEX_HOME="${DEFAULT_CODEX_HOME}" bash "${SCRIPT_DIR}/install-skills.sh"
-
 log "Before login, the configured account separation is:"
 log "  personal: CODEX_HOME=${PERSONAL_CODEX_HOME} (use 'codex-personal')"
 log "  default:  CODEX_HOME=${DEFAULT_CODEX_HOME} (use 'codex')"

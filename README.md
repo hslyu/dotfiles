@@ -99,12 +99,6 @@ See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
 `oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex`.
 
-To refresh the Codex setup:
-
-```bash
-bash codex/install-skills.sh
-```
-
 For a single account, authenticate on a new machine with:
 
 ```bash

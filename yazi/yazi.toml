@@ -25,7 +25,10 @@ prepend_rules = [
 [plugin]
 prepend_preloaders = [
   { mime = "application/pdf", run = "pdf-lite" },
+  # Re-encode PNGs for terminals that fail to render very large PNG files.
+  { mime = "image/png", run = "png-to-jpeg" },
 ]
 prepend_previewers = [
   { mime = "application/pdf", run = "pdf-lite" },
+  { mime = "image/png", run = "png-to-jpeg" },
 ]

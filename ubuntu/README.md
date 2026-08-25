@@ -100,7 +100,7 @@ bash wezterm/terminfo.sh <ssh-host>
 
 ## 8. Node.js, Bun, Codex
 
-Node.js LTS를 `~/.local` 아래에 설치하고, Bun과 OpenAI Codex CLI를 설치합니다. `~/dotfiles/codex/install-skills.sh`가 있으면 Codex skills도 같이 설치합니다.
+Node.js LTS를 `~/.local` 아래에 설치하고, Bun과 OpenAI Codex CLI를 설치합니다.
 
 ```bash
 bash scripts/60-install-node-bun-codex.sh

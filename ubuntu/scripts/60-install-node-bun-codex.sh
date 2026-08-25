@@ -45,11 +45,6 @@ ensure_codex() {
 	npm config set prefix "$install_dir"
 	npm install -g @openai/codex
 
-	local skill_installer="${repo_dir}/../dotfiles/codex/install-skills.sh"
-	if [[ -f "$skill_installer" ]]; then
-		log "Installing Codex skills from ${skill_installer}..."
-		bash "$skill_installer"
-	fi
 }
 
 ensure_node
