@@ -33,11 +33,6 @@ backup_and_link oh-my-zsh/.dircolors ~
 backup_and_link oh-my-zsh ~/.config
 backup_and_link oh-my-zsh/starship.toml ~/.config
 
-if [[ -f "${CURRENT_DIR}/codex/AGENTS.md" ]]; then
-	mkdir -p ~/.codex
-	backup_and_link codex/AGENTS.md ~/.codex
-fi
-
 if [[ -f "${CURRENT_DIR}/codex/config.toml" ]]; then
 	mkdir -p ~/.codex
 	backup_and_link codex/config.toml ~/.codex
