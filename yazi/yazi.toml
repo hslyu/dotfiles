@@ -18,6 +18,7 @@ ropen = [{ run = 'ropen "$@"', desc = "Open with ropen" }]
 [open]
 prepend_rules = [
   { mime = "application/pdf", use = "ropen" },
+  { mime = "image/*", use = "ropen" },
   { url = "*.pdf", use = "ropen" },
 ]
 
