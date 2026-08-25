@@ -1,3 +1,2 @@
-service_tier = "default"
-[projects."/home/snu_hsly/dotfiles"]
-trust_level = "trusted"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
