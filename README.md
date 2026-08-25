@@ -117,7 +117,7 @@ To register separate personal and default accounts using Device Code login, run:
 bash codex/setup-two-accounts.sh
 ```
 
-It completes Device Code login in this order: `codex-personal` (personal account), then `codex` (default account). The two sessions are kept in `~/.codex-personal` and `~/.codex`, respectively.
+It completes Device Code login in this order: `codex-personal` (personal account), then `codex` (default account). The two sessions are kept in `~/.codex-personal` and `~/.codex`, respectively, while both homes link `config.toml` to the shared `codex/config.toml` in this repository.
 
 4. Install neovim and tmux
 

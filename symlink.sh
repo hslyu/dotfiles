@@ -34,8 +34,10 @@ backup_and_link oh-my-zsh ~/.config
 backup_and_link oh-my-zsh/starship.toml ~/.config
 
 if [[ -f "${CURRENT_DIR}/codex/config.toml" ]]; then
-	mkdir -p ~/.codex
-	backup_and_link codex/config.toml ~/.codex
+	for codex_home in ~/.codex ~/.codex-personal; do
+		mkdir -p "${codex_home}"
+		backup_and_link codex/config.toml "${codex_home}"
+	done
 fi
 
 if [[ -d "${CURRENT_DIR}/wezterm" ]]; then

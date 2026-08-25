@@ -22,7 +22,7 @@ CODEX_HOME="${DEFAULT_CODEX_HOME}" bash "${SCRIPT_DIR}/install-skills.sh"
 log "Before login, the configured account separation is:"
 log "  personal: CODEX_HOME=${PERSONAL_CODEX_HOME} (use 'codex-personal')"
 log "  default:  CODEX_HOME=${DEFAULT_CODEX_HOME} (use 'codex')"
-log "  both:     shared Codex instructions and skills are installed in each CODEX_HOME"
+log "  both:     ${SCRIPT_DIR}/config.toml is shared; account sessions remain separate"
 
 log "[1/2] Register the personal account using the device code shown next."
 CODEX_HOME="${PERSONAL_CODEX_HOME}" codex login --device-auth

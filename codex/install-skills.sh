@@ -24,6 +24,30 @@ install_personal_launcher() {
 	log "Installed personal Codex launcher at ${dest}."
 }
 
+install_shared_config() {
+	local src="${SCRIPT_DIR}/config.toml"
+	local dest="${CODEX_HOME}/config.toml"
+
+	if [[ ! -f "${src}" ]]; then
+		log "Skip shared Codex config (source file not found)."
+		return
+	fi
+
+	if [[ -L "${dest}" && "$(readlink "${dest}")" == "${src}" ]]; then
+		log "Shared Codex config is already linked at ${dest}."
+		return
+	fi
+
+	if [[ -e "${dest}" || -L "${dest}" ]]; then
+		log "Backing up ${dest} -> ${dest}~"
+		rm -rf "${dest}~"
+		mv "${dest}" "${dest}~"
+	fi
+
+	ln -s "${src}" "${dest}"
+	log "Linked shared Codex config at ${dest}."
+}
+
 remove_global_instructions_link() {
 	local src="${SCRIPT_DIR}/AGENTS.md"
 	local dest="${CODEX_HOME}/AGENTS.md"
@@ -47,6 +71,7 @@ remove_skill() {
 mkdir -p "${SKILLS_DIR}"
 
 install_personal_launcher
+install_shared_config
 remove_global_instructions_link
 
 remove_skill karpathy-guidelines
