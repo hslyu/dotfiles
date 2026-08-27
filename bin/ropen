@@ -120,8 +120,8 @@ ssh_opts() {
 		-o IdentitiesOnly=yes
 		-o NumberOfPasswordPrompts=1
 		-o PreferredAuthentications=publickey,password,keyboard-interactive
-		-o StrictHostKeyChecking=accept-new
-		-o UserKnownHostsFile="$KNOWN_HOSTS"
+		-o StrictHostKeyChecking=no
+		-o UserKnownHostsFile=/dev/null
 	)
 
 	if [[ -n "${PRIVATE_KEY:-}" && -f "$PRIVATE_KEY" ]]; then
