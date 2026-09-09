@@ -3,12 +3,11 @@
 ratio = [1, 2, 5]
 
 [preview]
-# Large LaTeX figure PDFs can create huge preview cache images and make the
-# preview pane flicker or blank while moving the cursor.
-max_width = 1200
-max_height = 1200
+# Leave a short settling interval before drawing image previews.
+max_width = 2560
+max_height = 1440
 image_delay = 100
-image_quality = 70
+image_quality = 80
 image_filter = "triangle"
 
 [opener]
@@ -20,15 +19,4 @@ prepend_rules = [
   { mime = "application/pdf", use = "ropen" },
   { mime = "image/*", use = "ropen" },
   { url = "*.pdf", use = "ropen" },
-]
-
-[plugin]
-prepend_preloaders = [
-  { mime = "application/pdf", run = "pdf-lite" },
-  # Re-encode PNGs for terminals that fail to render very large PNG files.
-  { mime = "image/png", run = "png-to-jpeg" },
-]
-prepend_previewers = [
-  { mime = "application/pdf", run = "pdf-lite" },
-  { mime = "image/png", run = "png-to-jpeg" },
 ]
