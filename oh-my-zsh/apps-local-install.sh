@@ -115,6 +115,16 @@ ensure_codex() {
 
 }
 
+ensure_github_cli() {
+	if [[ "$(uname -s)" != "Linux" ]]; then
+		log "Skip GitHub CLI installation (Linux installer only)."
+		return
+	fi
+
+	log "Installing/updating GitHub CLI..."
+	"${SCRIPT_DIR}/../install-gh-cli-locally-linux.sh"
+}
+
 ensure_oh_my_zsh
 ensure_starship
 ensure_zoxide
@@ -123,5 +133,6 @@ ensure_bun
 ensure_thefuck
 setup_basedpyright_tools
 ensure_codex
+ensure_github_cli
 
 log "All optional tools checked."

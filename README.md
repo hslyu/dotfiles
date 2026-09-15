@@ -113,6 +113,9 @@ bash codex/setup-two-accounts.sh
 
 It completes Device Code login in this order: `codex-personal` (personal account), then `codex` (default account). The two sessions are kept in `~/.codex-personal` and `~/.codex`, respectively, while both homes link `config.toml` to the shared `codex/config.toml` in this repository.
 
+On Linux, `oh-my-zsh/apps-local-install.sh` also installs or updates the latest
+GitHub CLI at `~/.local/bin/gh` after verifying the official release checksum.
+
 4. Install neovim and tmux
 
 You need Neovim v0.11.3.

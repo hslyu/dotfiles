@@ -47,8 +47,14 @@ ensure_codex() {
 
 }
 
+ensure_github_cli() {
+	log "Installing/updating GitHub CLI..."
+	"${repo_dir}/../install-gh-cli-locally-linux.sh"
+}
+
 ensure_node
 ensure_bun
 ensure_codex
+ensure_github_cli
 
-log "Node.js, Bun, and Codex setup complete."
+log "Node.js, Bun, Codex, and GitHub CLI setup complete."

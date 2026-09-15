@@ -20,4 +20,3 @@ fi
 
 # python virtualenv
 alias da='deactivate'
-

@@ -98,9 +98,11 @@ SSH 서버에 terminfo를 설치하려면 호스트명을 인자로 넘기세요
 bash wezterm/terminfo.sh <ssh-host>
 ```
 
-## 8. Node.js, Bun, Codex
+## 8. Node.js, Bun, Codex, GitHub CLI
 
-Node.js LTS를 `~/.local` 아래에 설치하고, Bun과 OpenAI Codex CLI를 설치합니다.
+Node.js LTS, Bun, OpenAI Codex CLI, 최신 GitHub CLI를 사용자 로컬 경로에 설치합니다.
+GitHub CLI release는 공식 SHA-256 checksum을 검증한 뒤 `~/.local/bin/gh`에
+설치됩니다.
 
 ```bash
 bash scripts/60-install-node-bun-codex.sh

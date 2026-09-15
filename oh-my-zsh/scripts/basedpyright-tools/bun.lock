@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "deardent-0+untagged.1.gd53c0aa.6.gbad2a92",
