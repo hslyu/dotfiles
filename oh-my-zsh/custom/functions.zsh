@@ -38,7 +38,7 @@ dotstash() {
 dotinstall() {
 	DOTFILES_DIR=$(dotfiles_dir)
 
-	"$DOTFILES_DIR"/light-shell/oh-my-zsh/apps-local-install.sh
+	"$DOTFILES_DIR"/oh-my-zsh/apps-local-install.sh
 }
 
 dotupdate() {

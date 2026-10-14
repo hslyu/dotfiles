@@ -6,7 +6,7 @@ source ~/.ssh/.agent.pid >&/dev/null
 
 # If you come from bash you might have to change your $PATH.
 export BUN_INSTALL="$HOME/.bun"
-export PATH="$HOME/bin:/usr/bin:/usr/local/bin:$PATH:$BUN_INSTALL/bin"
+export PATH="$HOME/.local/bin:$HOME/bin:/usr/bin:/usr/local/bin:$PATH:$BUN_INSTALL/bin"
 
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -155,3 +155,9 @@ fpath+=~/.zfunc
 
 alias gpu0="CUDA_VISIBLE_DEVICES=0"
 alias gpu1="CUDA_VISIBLE_DEVICES=1"
+
+# >>> codex-fallback dotfiles >>>
+if [ -r "$HOME/.local/share/codex-fallback/shell.sh" ]; then
+  . "$HOME/.local/share/codex-fallback/shell.sh"
+fi
+# <<< codex-fallback dotfiles <<<

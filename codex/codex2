@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+launcher_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+codex2_home="${CODEX2_HOME:-$HOME/.codex2}"
+mkdir -p "$codex2_home"
+exec env CODEX_HOME="$codex2_home" "$launcher_dir/codex-fallback" --dangerously-bypass-approvals-and-sandbox "$@"

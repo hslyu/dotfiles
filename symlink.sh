@@ -80,4 +80,6 @@ linux-gnu*)
 	;;
 esac
 
+bash "${CURRENT_DIR}/codex/install-fallback.sh" --if-available
+
 echo "[dotfiles] Symlinks created."

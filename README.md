@@ -99,6 +99,25 @@ See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
 `oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex`.
 
+It also installs capacity routing for both `codex` and `codex-personal`. The
+initial order is Sol 6.1 max, Astra 6 max, Sol 6.1 xhigh, Astra 6 xhigh.
+New Codex recommendations replace the primary model while retaining the previous
+primary, and earlier stages are checked for recovery automatically. See
+[routing rules and controls](codex/fallback/README.md).
+
+`symlink.sh`, the Ubuntu Node/Codex installer, and `dotupdate` apply the router
+automatically when Codex is installed. To install only the router, or deploy a
+commit already pushed to `origin/main` to multiple SSH hosts:
+
+```bash
+bash ~/dotfiles/codex/install-fallback.sh
+bash ~/dotfiles/codex/deploy-fallback.sh snu9 another-host
+```
+
+Deployment fetches the remote repository and installs from a separate checkout,
+preserving existing dotfiles edits and each server's Codex login/configuration.
+New servers require Node.js 20+, npm, an installed Codex CLI, and their own login.
+
 For a single account, authenticate on a new machine with:
 
 ```bash

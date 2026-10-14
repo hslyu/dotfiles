@@ -44,6 +44,7 @@ ensure_codex() {
 	log "Installing/updating Codex CLI..."
 	npm config set prefix "$install_dir"
 	npm install -g @openai/codex
+	bash "${repo_dir}/../codex/install-fallback.sh"
 
 }
 

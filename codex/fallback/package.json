@@ -1,0 +1,10 @@
+{
+  "name": "codex-fallback",
+  "version": "2.0.0",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test *.test.mjs" },
+  "dependencies": {
+    "ws": "8.18.3"
+  }
+}
