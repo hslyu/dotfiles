@@ -15,8 +15,12 @@ usage() {
 	cat >&2 <<'USAGE'
 usage:
   ropen login
+  ropen clear
   ropen [--no-mkdir] [-n|--no-open] FILE
   ropen --install-key
+
+clear stops the SSH control connection and terminates local TCP listeners on
+ROPEN_PORT. Reconnect SSH afterward to restore the reverse tunnel.
 
 environment:
   ROPEN_PORT  reverse SSH tunnel port, default: 2222
@@ -42,6 +46,11 @@ parse_args() {
 			shift
 			break
 			;;
+		clear)
+			MODE="clear"
+			shift
+			break
+			;;
 		--no-mkdir)
 			MKDIR=0
 			shift
@@ -64,9 +73,9 @@ parse_args() {
 		esac
 	done
 
-	if [[ "$MODE" == "login" && $# -gt 0 ]]; then
+	if [[ "$MODE" != "open" && $# -gt 0 ]]; then
 		usage
-		die "login does not accept file arguments"
+		die "$MODE does not accept file arguments"
 	fi
 	if [[ "$MODE" == "open" && $# -ne 1 ]]; then
 		usage
@@ -136,6 +145,35 @@ run_ssh() {
 	ensure_ssh_dir
 	mapfile -d '' -t opts < <(ssh_opts)
 	ssh "${opts[@]}" "$TARGET" "$@"
+}
+
+clear_connections() {
+	[[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) ||
+		die "invalid ROPEN_PORT: $PORT"
+	command -v lsof >/dev/null 2>&1 || die "clear requires lsof"
+
+	# -O exit only contacts an existing master; it never opens a new connection.
+	ssh -S "$CONTROL_PATH" -O exit -p "$PORT" "$TARGET" >/dev/null 2>&1 || true
+
+	local -a pids
+	local remaining attempt
+	mapfile -t pids < <(lsof -nP -a -iTCP:"$PORT" -sTCP:LISTEN -t | sort -u)
+	if [[ ${#pids[@]} -eq 0 ]]; then
+		echo "ropen: no local TCP listeners visible on port $PORT"
+		return
+	fi
+
+	echo "ropen: terminating listeners on port $PORT (PIDs: ${pids[*]}); reconnect SSH to restore the reverse tunnel"
+	kill -TERM -- "${pids[@]}" || die "could not terminate listeners on port $PORT; check process permissions"
+	for ((attempt = 0; attempt < 20; attempt++)); do
+		remaining="$(lsof -nP -a -iTCP:"$PORT" -sTCP:LISTEN -t || true)"
+		if [[ -z "$remaining" ]]; then
+			echo "ropen: cleared port $PORT"
+			return
+		fi
+		sleep 0.1
+	done
+	die "port $PORT still has listeners (PIDs: $remaining)"
 }
 
 base64_decode_script='
@@ -219,6 +257,7 @@ parse_args "$@"
 
 case "$MODE" in
 login) login ;;
+clear) clear_connections ;;
 open) open_file ;;
 *) die "unknown mode: $MODE" ;;
 esac
