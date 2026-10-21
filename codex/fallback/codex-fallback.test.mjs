@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
 import { CapacityFallback, shouldWrap, startProxy, reconnectArgs } from './codex-fallback.mjs';
-import { RoutingPolicy, stageKey, routeParams } from './routing.mjs';
+import { RoutingPolicy, stageKey, routeParams, isCapacityError } from './routing.mjs';
 import { CapacityMonitor } from './monitor.mjs';
 
 const capacity = { message: 'Selected model is at capacity. Please try a different model.', codexErrorInfo: 'serverOverloaded' };
@@ -30,7 +30,7 @@ function fakeMonitor() {
   };
 }
 async function fixture(t, { recheckMs = 60000, policy = new RoutingPolicy(catalog('gpt-6.1-sol', 'gpt-6-astra')),
-  monitor = fakeMonitor() } = {}) {
+  monitor = fakeMonitor(), goalStatus = 'active' } = {}) {
   const upstream = [], downstream = [];
   const fallback = new CapacityFallback(message => upstream.push(message), message => downstream.push(message),
     { policy, monitor, recheckMs, settleMs: 1 });
@@ -39,6 +39,8 @@ async function fixture(t, { recheckMs = 60000, policy = new RoutingPolicy(catalo
     cwd: '/original/workspace', approvalPolicy: 'on-request', sandboxPolicy: { type: 'workspaceWrite' },
     collaborationMode: { mode: 'default', settings: { model: 'gpt-6-sol', reasoning_effort: 'medium', developer_instructions: 'existing instructions' } },
     input: [{ type: 'text', text: 'Original request with previously completed actions' }], clientUserMessageId: 'original-message' };
+  fallback.state(params.threadId);
+  if (goalStatus) fallback.server({ method: 'thread/goal/updated', params: { threadId: params.threadId, goal: { status: goalStatus } } });
   await fallback.client({ id: 1, method: 'turn/start', params });
   return { fallback, upstream, downstream, params, policy, monitor };
 }
@@ -47,7 +49,7 @@ function finish(fallback, id, error = capacity, threadId = 'original-thread', st
 }
 const route = request => `${request.params.model}:${request.params.effort}`;
 
-test('initial task and failovers follow all four requested model/effort stages exactly', async t => {
+test('active goal tasks and failovers follow all four requested model/effort stages exactly', async t => {
   const { fallback, upstream, monitor } = await fixture(t);
   for (const id of ['one', 'two', 'three']) { finish(fallback, id); await wait(); }
   assert.deepEqual(upstream.map(route), stages);
@@ -55,6 +57,56 @@ test('initial task and failovers follow all four requested model/effort stages e
   for (const request of upstream) {
     assert.equal(request.params.model, request.params.collaborationMode.settings.model);
     assert.equal(request.params.effort, request.params.collaborationMode.settings.reasoning_effort);
+  }
+});
+
+test('ordinary conversations preserve manual settings and never retry capacity failures', async t => {
+  const { fallback, upstream, params, monitor } = await fixture(t, { goalStatus: null, recheckMs: 10 });
+  assert.deepEqual(upstream[0].params, params);
+  finish(fallback, 'ordinary-capacity');
+  await wait(35);
+  assert.equal(upstream.length, 1);
+  assert.deepEqual(monitor.calls, []);
+  assert.deepEqual(monitor.records, []);
+  await fallback.client({ id: 2, method: 'turn/start', params: { ...params, effort: 'high',
+    collaborationMode: { ...params.collaborationMode, settings: { ...params.collaborationMode.settings, reasoning_effort: 'high' } } } });
+  assert.equal(route(upstream.at(-1)), 'gpt-6-sol:high');
+});
+
+test('starting, resuming, and forking threads do not force max or replace configuration', async t => {
+  const { fallback, upstream } = await fixture(t, { goalStatus: null });
+  for (const method of ['thread/start', 'thread/resume', 'thread/fork']) {
+    const params = { threadId: 'saved-thread', model: 'gpt-6-sol', config: { model_reasoning_effort: 'medium', other: true } };
+    await fallback.client({ id: method, method, params });
+    assert.deepEqual(upstream.at(-1).params, params);
+  }
+});
+
+test('goal get/set responses activate routing only after the server confirms an active goal', async t => {
+  const { fallback, upstream, params } = await fixture(t, { goalStatus: null });
+  finish(fallback, 'ordinary', null, params.threadId, 'completed');
+  await fallback.client({ id: 2, method: 'thread/goal/set', params: { threadId: params.threadId, objective: 'Do task' } });
+  assert.equal(fallback.state(params.threadId).goalActive, false);
+  fallback.server({ id: 2, result: { goal: { status: 'active' } } });
+  await fallback.client({ id: 3, method: 'turn/start', params });
+  assert.equal(route(upstream.at(-1)), stages[0]);
+  finish(fallback, 'goal', null, params.threadId, 'completed');
+  await fallback.client({ id: 4, method: 'thread/goal/get', params: { threadId: params.threadId } });
+  fallback.server({ id: 4, result: { goal: null } });
+  await fallback.client({ id: 5, method: 'turn/start', params });
+  assert.deepEqual(upstream.at(-1).params, params);
+});
+
+test('goal completion, pauses, limits, and deletion stop retries without another prompt', async t => {
+  for (const status of ['paused', 'complete', 'blocked', 'usageLimited', 'budgetLimited', null]) {
+    const { fallback, upstream } = await fixture(t);
+    finish(fallback, 'failed');
+    fallback.server({ method: status ? 'thread/goal/updated' : 'thread/goal/cleared', params: {
+      threadId: 'original-thread', ...(status ? { goal: { status } } : {}) } });
+    await wait();
+    assert.equal(upstream.length, 1, String(status));
+    assert.equal(fallback.state('original-thread').goalActive, false);
+    fallback.close();
   }
 });
 
@@ -94,8 +146,13 @@ test('periodic recovery leaves active work intact and the next turn returns to p
   const { fallback, upstream, monitor, params } = await fixture(t, { recheckMs: 20 });
   finish(fallback, 'one'); await wait(10);
   monitor.outcomes.set(stages[0], 'available'); await wait(35);
-  assert.equal(upstream.length, 2);
+  assert.equal(upstream.filter(request => request.method === 'turn/start').length, 2);
   assert.equal(stageKey(fallback.state('original-thread').readyStage), stages[0]);
+  const settings = upstream.find(request => request.method === 'thread/settings/update');
+  assert.equal(route(settings), stages[0]);
+  fallback.server({ id: settings.id, result: {} });
+  fallback.server({ method: 'thread/settings/updated', params: { threadId: 'original-thread', threadSettings: settings.params } });
+  assert.equal(stageKey(fallback.state('original-thread').stage), stages[1]);
   finish(fallback, 'success', null, 'original-thread', 'completed');
   await fallback.client({ id: 2, method: 'turn/start', params: { ...params, input: [{ type: 'text', text: 'Next task' }] } });
   assert.equal(route(upstream.at(-1)), stages[0]);
@@ -126,7 +183,51 @@ test('the cooldown expires during active fallback work so primary is checked aga
   assert.equal(route(upstream.at(-1)), stages[2]);
   await wait(55);
   assert.equal(stageKey(fallback.state('original-thread').readyStage), stages[0]);
-  assert.equal(upstream.length, 4);
+  assert.equal(upstream.filter(request => request.method === 'turn/start').length, 4);
+});
+
+test('capacity recognition accepts native wrappers without matching arbitrary quoted error text', () => {
+  for (const prefix of ['', 'stream disconnected before completion: ', 'unexpected status 503 Service Unavailable: ',
+    'unexpected status 429 Too Many Requests: ']) {
+    assert.equal(isCapacityError({ codexErrorInfo: 'other', message: `${prefix}${capacity.message}` }), true);
+  }
+  for (const message of [`Assistant quoted: ${capacity.message}`, 'Usage limit exceeded', 'Unauthorized',
+    'exceeded retry limit, last status: 429 Too Many Requests']) {
+    assert.equal(isCapacityError({ codexErrorInfo: 'other', message }), false);
+  }
+});
+
+test('native blocked-before-error ordering updates settings and reactivates the Goal exactly once', async t => {
+  const { fallback, upstream } = await fixture(t);
+  fallback.server({ method: 'turn/started', params: { threadId: 'original-thread', turn: { id: 'native-failure', status: 'inProgress' } } });
+  await fallback.client({ id: 'old-goal-read', method: 'thread/goal/get', params: { threadId: 'original-thread' } });
+  fallback.server({ method: 'thread/goal/updated', params: { threadId: 'original-thread', turnId: 'native-failure', goal: { status: 'blocked' } } });
+  fallback.server({ id: 'old-goal-read', result: { goal: { status: 'active' } } });
+  assert.equal(fallback.state('original-thread').goalActive, false);
+  finish(fallback, 'native-failure', { codexErrorInfo: 'other', message: `stream disconnected before completion: ${capacity.message}` });
+  await wait();
+  const settings = upstream.at(-1);
+  assert.equal(settings.method, 'thread/settings/update'); assert.equal(route(settings), stages[1]);
+  await fallback.client({ id: 'current-goal-read', method: 'thread/goal/get', params: { threadId: 'original-thread' } });
+  fallback.server({ id: 'current-goal-read', result: { goal: { status: 'blocked' } } });
+  assert.equal(fallback.state('original-thread').recoveringGoal, true);
+  fallback.server({ id: settings.id, result: {} }); await wait();
+  const activation = upstream.at(-1);
+  assert.equal(activation.method, 'thread/goal/set');
+  assert.deepEqual(activation.params, { threadId: 'original-thread', status: 'active', origin: 'automatic' });
+  fallback.server({ method: 'thread/goal/updated', params: { threadId: 'original-thread', turnId: null, goal: { status: 'active' } } });
+  fallback.server({ id: activation.id, result: { goal: { status: 'active' } } });
+  assert.equal(upstream.filter(request => request.method === 'turn/start').length, 1);
+  assert.equal(fallback.state('original-thread').goalActive, true);
+});
+
+test('a deliberate in-turn block followed by more work is not automatically reactivated', async t => {
+  const { fallback, upstream } = await fixture(t);
+  fallback.server({ method: 'turn/started', params: { threadId: 'original-thread', turn: { id: 'blocked', status: 'inProgress' } } });
+  fallback.server({ method: 'thread/goal/updated', params: { threadId: 'original-thread', turnId: 'blocked', goal: { status: 'blocked' } } });
+  fallback.server({ method: 'item/completed', params: { threadId: 'original-thread', turnId: 'blocked', item: { type: 'functionCall' } } });
+  finish(fallback, 'blocked'); await wait();
+  assert.equal(upstream.length, 1);
 });
 
 test('duplicate notifications cannot repeat a turn', async t => {
@@ -273,7 +374,7 @@ async function mockBackend(t, handle) {
 
 test('WebSocket transport relays RPC and automatically resumes the exact thread', async t => {
   const { socket, requests } = await mockBackend(t, (message, send) => {
-    send({ id: message.id, result: { accepted: true } });
+    send({ id: message.id, result: message.method === 'thread/goal/get' ? { goal: { status: 'active' } } : { accepted: true } });
     if (message.method === 'turn/start' && message.params.model === 'gpt-6.1-sol') send({ method: 'turn/completed', params: {
       threadId: message.params.threadId, turn: { id: 'failed', status: 'failed', items: [], error: capacity } } });
   });
@@ -282,11 +383,70 @@ test('WebSocket transport relays RPC and automatically resumes the exact thread'
   const client = new WebSocket('ws://localhost/', { createConnection: () => connect(proxy.address.slice('unix://'.length)) });
   const replies = []; client.on('message', data => replies.push(JSON.parse(data.toString())));
   await new Promise((done, fail) => { client.once('open', done); client.once('error', fail); });
+  client.send(JSON.stringify({ id: 0, method: 'thread/goal/get', params: { threadId: 'exact-thread' } }));
+  await wait(10);
   client.send(JSON.stringify({ id: 1, method: 'turn/start', params: { threadId: 'exact-thread', model: 'gpt-6.1-sol', input: [{ type: 'text', text: 'Do task' }] } }));
   await wait(75);
-  assert.equal(requests.length, 2); assert.equal(requests[1].params.threadId, 'exact-thread');
-  assert.equal(requests[1].params.model, 'gpt-6-astra'); assert.equal(requests[1].params.effort, 'max');
-  assert.equal(replies[0].id, 1); assert.equal(replies.length, 2); client.terminate();
+  const turns = requests.filter(request => request.method === 'turn/start');
+  assert.equal(turns.length, 2); assert.equal(turns[1].params.threadId, 'exact-thread');
+  assert.equal(turns[1].params.model, 'gpt-6-astra'); assert.equal(turns[1].params.effort, 'max');
+  assert.equal(replies[1].id, 1); assert.equal(replies.length, 3); client.terminate();
+});
+
+test('a reconnected daemon goal recovers from capacity without any new user turn', async t => {
+  const mode = { mode: 'plan', settings: { model: 'gpt-6.1-sol', reasoning_effort: 'max', developer_instructions: 'keep plan instructions' } };
+  const { socket, requests } = await mockBackend(t, (message, send) => {
+    if (message.method === 'thread/resume') send({ id: message.id, result: {
+      thread: { id: 'saved-goal' }, model: 'gpt-6.1-sol', reasoningEffort: 'max', collaborationMode: mode } });
+    else if (message.method === 'thread/goal/get') {
+      send({ id: message.id, result: { goal: { status: 'active' } } });
+      send({ method: 'turn/started', params: { threadId: 'saved-goal', turn: { id: 'daemon-owned', status: 'inProgress', items: [] } } });
+      send({ method: 'turn/completed', params: { threadId: 'saved-goal', turn: { id: 'daemon-owned', status: 'failed', items: [], error: capacity } } });
+    } else if (message.method === 'turn/start') {
+      send({ id: message.id, result: { turn: { id: 'recovered' } } });
+      send({ method: 'turn/started', params: { threadId: 'saved-goal', turn: { id: 'recovered', status: 'inProgress', items: [] } } });
+      send({ method: 'turn/completed', params: { threadId: 'saved-goal', turn: { id: 'recovered', status: 'completed', items: [], error: null } } });
+    }
+  });
+  const policy = new RoutingPolicy(catalog('gpt-6.1-sol', 'gpt-6-astra'));
+  const proxy = await startProxy(socket, { policy, monitor: fakeMonitor(), settleMs: 1 }); t.after(() => proxy.close());
+  const client = new WebSocket('ws://localhost/', { createConnection: () => connect(proxy.address.slice('unix://'.length)) });
+  const replies = []; client.on('message', data => replies.push(JSON.parse(data.toString())));
+  await new Promise((done, fail) => { client.once('open', done); client.once('error', fail); });
+  // This client reconnects only. It never submits a prompt or turn/start.
+  client.send(JSON.stringify({ id: 1, method: 'thread/resume', params: { threadId: 'saved-goal' } }));
+  await wait(75);
+  const turns = requests.filter(request => request.method === 'turn/start');
+  assert.equal(turns.length, 1);
+  assert.match(turns[0].id, /^codex-fallback:/);
+  assert.equal(turns[0].params.threadId, 'saved-goal');
+  assert.equal(route(turns[0]), stages[1]);
+  assert.equal(turns[0].params.collaborationMode.mode, 'plan');
+  assert.equal(turns[0].params.collaborationMode.settings.developer_instructions, 'keep plan instructions');
+  assert.ok(replies.some(message => message.method === 'turn/completed' && message.params.turn.id === 'recovered'
+    && message.params.turn.status === 'completed'));
+  assert.ok(!replies.some(message => typeof message.id === 'string' && message.id.startsWith('codex-fallback-control:')));
+  client.terminate();
+});
+
+test('clearing a reconnected goal while its status query is pending prevents stale reactivation', async t => {
+  const { socket, requests } = await mockBackend(t, (message, send) => {
+    if (message.method === 'thread/resume') send({ id: message.id, result: {
+      thread: { id: 'cleared-goal' }, model: 'gpt-6.1-sol', reasoningEffort: 'max' } });
+    else if (message.method === 'thread/goal/get') {
+      send({ method: 'thread/goal/cleared', params: { threadId: 'cleared-goal' } });
+      send({ id: message.id, result: { goal: { status: 'active' } } });
+      send({ method: 'turn/completed', params: { threadId: 'cleared-goal', turn: { id: 'old-turn', status: 'failed', items: [], error: capacity } } });
+    }
+  });
+  const proxy = await startProxy(socket, { policy: new RoutingPolicy(catalog('gpt-6.1-sol', 'gpt-6-astra')),
+    monitor: fakeMonitor(), settleMs: 1 }); t.after(() => proxy.close());
+  const client = new WebSocket('ws://localhost/', { createConnection: () => connect(proxy.address.slice('unix://'.length)) });
+  await new Promise((done, fail) => { client.once('open', done); client.once('error', fail); });
+  client.send(JSON.stringify({ id: 1, method: 'thread/resume', params: { threadId: 'cleared-goal' } }));
+  await wait(75);
+  assert.equal(requests.filter(request => request.method === 'turn/start').length, 0);
+  client.terminate();
 });
 
 test('health probes require successful inference, use isolated threads, and disable tools/hooks', async t => {

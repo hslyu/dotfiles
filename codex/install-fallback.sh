@@ -62,7 +62,7 @@ JS
 [[ -n "$native_path" ]] || unavailable 'Native Codex CLI was not found; install @openai/codex first.'
 
 mkdir -p "$runtime_dir" "$bin_dir"
-for source_file in codex-fallback.mjs monitor.mjs routing.mjs native.mjs codex-fallback.test.mjs package.json package-lock.json README.md; do
+for source_file in codex-fallback.mjs monitor.mjs routing.mjs native.mjs codex-fallback.test.mjs native-integration.test.mjs package.json package-lock.json README.md VALIDATION.md; do
   install -m 644 "$source_dir/$source_file" "$runtime_dir/$source_file"
 done
 printf '%s\n' "$native_path" > "$runtime_dir/.native-codex"

@@ -7,7 +7,7 @@ export const stageKey = stage => `${stage.model}:${stage.effort}`;
 export const sameStage = (a, b) => Boolean(a && b && stageKey(a) === stageKey(b));
 export const isCapacityError = error => error?.codexErrorInfo === 'serverOverloaded'
   || (typeof error?.message === 'string'
-    && /^Selected model is at capacity\.(?:\s|$)/i.test(error.message.trim()));
+    && /^(?:(?:stream disconnected before completion|unexpected status (?:429|503|529)(?: [^:\n]+)?):\s*)?Selected model is at capacity\.(?:\s|$)/i.test(error.message.trim()));
 
 function supports(model, effort) {
   return model?.supportedReasoningEfforts?.some(option => option.reasoningEffort === effort) ?? false;

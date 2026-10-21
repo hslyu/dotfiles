@@ -99,8 +99,9 @@ See [oh-my-zsh/README.md](oh-my-zsh/README.md) for details.
 
 `oh-my-zsh/apps-local-install.sh` installs/updates the OpenAI Codex CLI with `npm install -g @openai/codex`.
 
-It also installs capacity routing for both `codex` and `codex-personal`. The
-initial order is Sol 6.1 max, Astra 6 max, Sol 6.1 xhigh, Astra 6 xhigh.
+It also installs capacity routing for active Goals in `codex` and `codex-personal`.
+Ordinary conversations preserve their selected model and effort. For active Goals,
+the initial order is Sol 6.1 max, Astra 6 max, Sol 6.1 xhigh, Astra 6 xhigh.
 New Codex recommendations replace the primary model while retaining the previous
 primary, and earlier stages are checked for recovery automatically. See
 [routing rules and controls](codex/fallback/README.md).
