@@ -19,8 +19,9 @@ usage:
   ropen [--no-mkdir] [-n|--no-open] FILE
   ropen --install-key
 
-clear stops the SSH control connection and terminates local TCP listeners on
-ROPEN_PORT. Reconnect SSH afterward to restore the reverse tunnel.
+clear resets ROPEN_PORT through the current SSH connection and stops the
+previous tunnel connection. The current login stays connected.
+Requires the recovery tunnel configured on the SSH client.
 
 environment:
   ROPEN_PORT  reverse SSH tunnel port, default: 2222
@@ -123,6 +124,8 @@ ssh_opts() {
 	local opts=(
 		-p "$PORT"
 		-o ConnectTimeout=5
+		-o ServerAliveInterval=15
+		-o ServerAliveCountMax=2
 		-o ControlMaster=auto
 		-o ControlPersist=60
 		-o ControlPath="$CONTROL_PATH"
@@ -150,30 +153,124 @@ run_ssh() {
 clear_connections() {
 	[[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) ||
 		die "invalid ROPEN_PORT: $PORT"
-	command -v lsof >/dev/null 2>&1 || die "clear requires lsof"
+	[[ "$HOST" == localhost || "$HOST" == 127.0.0.1 || "$HOST" == ::1 ]] ||
+		die "clear requires a local reverse tunnel"
+	command -v python3 >/dev/null 2>&1 || die "clear requires python3"
+	pick_key
+	local -a opts
+	mapfile -d '' -t opts < <(ssh_opts)
+	python3 - "$PORT" "$CONTROL_PATH" "$TARGET" "${opts[@]}" <<'PY'
+import os
+from pathlib import Path
+import re
+import shlex
+import signal
+import subprocess
+import sys
+import time
 
-	# -O exit only contacts an existing master; it never opens a new connection.
-	ssh -S "$CONTROL_PATH" -O exit -p "$PORT" "$TARGET" >/dev/null 2>&1 || true
+port, control, target, *opts = sys.argv[1:]
+port = str(int(port))
 
-	local -a pids
-	local remaining attempt
-	mapfile -t pids < <(lsof -nP -a -iTCP:"$PORT" -sTCP:LISTEN -t | sort -u)
-	if [[ ${#pids[@]} -eq 0 ]]; then
-		echo "ropen: no local TCP listeners visible on port $PORT"
-		return
-	fi
+def die(message):
+    sys.exit('ropen: ' + message)
 
-	echo "ropen: terminating listeners on port $PORT (PIDs: ${pids[*]}); reconnect SSH to restore the reverse tunnel"
-	kill -TERM -- "${pids[@]}" || die "could not terminate listeners on port $PORT; check process permissions"
-	for ((attempt = 0; attempt < 20; attempt++)); do
-		remaining="$(lsof -nP -a -iTCP:"$PORT" -sTCP:LISTEN -t || true)"
-		if [[ -z "$remaining" ]]; then
-			echo "ropen: cleared port $PORT"
-			return
-		fi
-		sleep 0.1
-	done
-	die "port $PORT still has listeners (PIDs: $remaining)"
+def run(cmd, **kwargs):
+    return subprocess.run(cmd, check=True, timeout=15, **kwargs)
+
+def parent(pid):
+    return int((Path('/proc') / str(pid) / 'stat').read_text().rpartition(') ')[2].split()[1])
+
+def ssh_ancestor(pid):
+    seen = set()
+    while pid > 1 and pid not in seen:
+        seen.add(pid)
+        proc = Path('/proc') / str(pid)
+        try:
+            if proc.stat().st_uid == os.getuid() and (proc / 'comm').read_text().strip() == 'sshd':
+                return pid
+            pid = parent(pid)
+        except (FileNotFoundError, ProcessLookupError):
+            break
+    return None
+
+# A tmux shell descends from the detached server, so use its attached client.
+current = None
+if os.environ.get('TMUX') and os.environ.get('TMUX_PANE'):
+    client = subprocess.run(['tmux', 'display-message', '-p', '-t', os.environ['TMUX_PANE'],
+                             '#{client_pid}'], capture_output=True, text=True, timeout=5)
+    if client.returncode == 0 and client.stdout.strip().isdigit():
+        current = ssh_ancestor(int(client.stdout.strip()))
+if current is None:
+    current = ssh_ancestor(os.getppid())
+if current is None:
+    die('cannot identify the current SSH session; run clear in an attached SSH terminal')
+
+# sshd listeners may be hidden from unprivileged ss/lsof on this server.
+try:
+    unix = subprocess.check_output(['sudo', '-n', 'ss', '-H', '-xlpn'], text=True, timeout=5)
+except subprocess.CalledProcessError:
+    die('cannot inspect SSH listeners (sudo -n ss is required)')
+pattern = re.compile(re.escape(str(Path.home() / '.ssh' / 'ropen-recovery-')) + r'[a-f0-9]{40}\.sock')
+sockets = []
+for line in unix.splitlines():
+    if current in {int(pid) for pid in re.findall(r'pid=(\d+)', line)}:
+        sockets.extend(pattern.findall(line))
+if len(set(sockets)) != 1:
+    die('this session has no recovery tunnel; reconnect once with the updated ssh snu10 config')
+recovery = sockets[0]
+recovery_ssh = ['ssh', '-F', '/dev/null', '-p', '22',
+                '-o', 'ControlMaster=no', '-o', 'ControlPath=none',
+                '-o', 'BatchMode=yes', '-o', 'LogLevel=ERROR', '-o', 'ProxyCommand=nc -U ' + shlex.quote(recovery)] + opts + [target]
+
+def relink(action):
+    run(recovery_ssh + ['"$HOME/.ssh/ropen-relink" ' + action + ' ' + port])
+
+def listeners():
+    output = subprocess.check_output(['sudo', '-n', 'ss', '-H', '-ltnp', 'sport = :' + port],
+                                     text=True, timeout=5)
+    pids = {int(pid) for pid in re.findall(r'pid=(\d+)', output)}
+    if output.strip() and not pids:
+        die('cannot identify the listener on port ' + port)
+    return pids
+
+# Prove that the current client's control socket is reachable before changing anything.
+relink('--check')
+# Drop the ropen command's cached connection, not the current login transport.
+subprocess.run(['ssh', '-F', '/dev/null', '-S', control, '-O', 'exit', '-p', port, target],
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+# Cancel through the client when this SSH session already owns the port.
+relink('--cancel')
+old = listeners()
+for pid in old:
+    if pid == current:
+        die('could not cancel the current tunnel; preserving the current SSH session')
+    proc = Path('/proc') / str(pid)
+    try:
+        if proc.stat().st_uid != os.getuid() or (proc / 'comm').read_text().strip() != 'sshd':
+            die('refusing to stop an unrelated listener (PID ' + str(pid) + ')')
+    except FileNotFoundError:
+        continue
+for pid in old:
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print('ropen: stopped the previous tunnel SSH connection (PID ' + str(pid) + ')', flush=True)
+    except ProcessLookupError:
+        pass
+for attempt in range(50):
+    if not listeners():
+        break
+    time.sleep(0.1)
+else:
+    die('port ' + port + ' is still occupied; current session preserved')
+relink('--forward')
+if listeners() != {current}:
+    die('the new tunnel is not owned by the current SSH connection')
+verify = ['ssh', '-F', '/dev/null', '-o', 'ControlMaster=no', '-o', 'ControlPath=none',
+          '-o', 'BatchMode=yes', '-o', 'LogLevel=ERROR'] + opts + [target, 'hostname']
+local_name = subprocess.check_output(verify, text=True, timeout=15).strip()
+print('ropen: port ' + port + ' linked to ' + local_name + '; current SSH session preserved')
+PY
 }
 
 base64_decode_script='
@@ -188,7 +285,10 @@ explain_connection_failure() {
 	cat >&2 <<MSG
 ropen: cannot reach the local machine through ${HOST}:${PORT}.
 Open the SSH session from the local machine with:
-  ssh -R ${PORT}:localhost:22 <user>@<server>
+  ssh -o ExitOnForwardFailure=yes -R ${PORT}:localhost:22 <user>@<server>
+
+If SSH reports a remote port forwarding failure, an older SSH session may
+still own port ${PORT}. Run ropen clear in the current SSH session to relink it.
 
 On macOS, also make sure:
   System Settings -> General -> Sharing -> Remote Login -> ON
@@ -240,8 +340,34 @@ fi
 
 ($base64_decode_script) > \"\$ROPEN_FILE\"
 if [ \"\$ROPEN_OPEN\" = \"1\" ]; then
-	open \"\$ROPEN_FILE\" >/dev/null 2>&1 &
-	echo \"opened \$ROPEN_FILE\"
+	if [ \"\$(uname -s)\" = Linux ]; then
+		# SSH sessions need the environment of the logged-in desktop.
+		desktop_env=\"\$(systemctl --user show-environment 2>/dev/null || true)\"
+		while IFS= read -r entry; do
+			case \"\$entry\" in
+				DISPLAY=*|WAYLAND_DISPLAY=*|XAUTHORITY=*|XDG_RUNTIME_DIR=*|DBUS_SESSION_BUS_ADDRESS=*|XDG_CURRENT_DESKTOP=*)
+					export \"\$entry\"
+					;;
+			esac
+		done <<ROPEN_DESKTOP_ENV
+\$desktop_env
+ROPEN_DESKTOP_ENV
+		if [ -z \"\${DISPLAY:-}\${WAYLAND_DISPLAY:-}\" ]; then
+			echo \"ropen: saved \$ROPEN_FILE, but no local desktop session was found\" >&2
+			exit 1
+		fi
+		# GUI children must not keep the SSH output channels open.
+		open_log=\"\$(mktemp \"\${TMPDIR:-/tmp}/ropen-open.XXXXXX\")\"
+		if ! xdg-open \"\$ROPEN_FILE\" </dev/null >\"\$open_log\" 2>&1; then
+			cat \"\$open_log\" >&2
+			echo \"ropen: could not open \$ROPEN_FILE (log: \$open_log)\" >&2
+			exit 1
+		fi
+		echo \"requested open \$ROPEN_FILE (log: \$open_log)\"
+	else
+		open \"\$ROPEN_FILE\"
+		echo \"requested open \$ROPEN_FILE\"
+	fi
 else
 	echo \"saved \$ROPEN_FILE\"
 fi
@@ -249,7 +375,7 @@ fi
 
 	if ! base64 <"$file" | run_ssh "$cmd"; then
 		explain_connection_failure
-		exit 1
+		die "could not save or open $base through ${HOST}:${PORT}; see the error above"
 	fi
 }
 
