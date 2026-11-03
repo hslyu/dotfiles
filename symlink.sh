@@ -61,6 +61,10 @@ if [[ -f "${CURRENT_DIR}/bin/ropen" ]]; then
 	backup_and_link bin/ropen ~/.local/bin
 fi
 
+if [[ -f "${CURRENT_DIR}/bin/rscp" ]]; then
+	backup_and_link bin/rscp ~/.local/bin
+fi
+
 if [[ -f "${CURRENT_DIR}/conda/.condarc" ]]; then
 	backup_and_link conda/.condarc ~
 fi

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+	cat <<'USAGE'
+usage: rscp [-r] LOCAL_PATH HOST_PATH
+
+Copy a file from the local machine to this host through the ropen tunnel.
+Use -r to copy a directory. Quote ~/ paths so this host does not expand them:
+  rscp '~/Downloads/file.pdf' .
+  rscp -r '~/Downloads/my folder' ./
+
+Uses ROPEN_PORT (default: 2222), ROPEN_HOST (default: localhost), and
+ROPEN_USER (default: this host's user), with the same SSH key as ropen.
+Run ropen login to install the key, or ropen clear to recover the tunnel.
+USAGE
+}
+
+recursive=()
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-r) recursive=(-r); shift ;;
+	-h | --help) usage; exit 0 ;;
+	--) shift; break ;;
+	-*) printf 'rscp: unknown option: %s\n' "$1" >&2; exit 2 ;;
+	*) break ;;
+	esac
+done
+if [[ $# -ne 2 ]]; then
+	usage >&2
+	exit 2
+fi
+
+port="${ROPEN_PORT:-2222}"
+host="${ROPEN_HOST:-localhost}"
+if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
+	printf 'rscp: invalid ROPEN_PORT: %s\n' "$port" >&2
+	exit 2
+fi
+# Brackets keep IPv6 addresses unambiguous in scp's host:path syntax.
+if [[ "$host" == *:* && "$host" != \[*\] ]]; then
+	host="[$host]"
+fi
+target="${ROPEN_USER:+${ROPEN_USER}@}${host}"
+opts=(
+	-P "$port"
+	-o ConnectTimeout=5
+	-o ServerAliveInterval=15
+	-o ServerAliveCountMax=2
+	-o ControlMaster=auto
+	-o ControlPersist=60
+	-o "ControlPath=/tmp/ropen-ssh-${USER}-${port}-%r@%h"
+	-o IdentitiesOnly=yes
+	-o NumberOfPasswordPrompts=1
+	-o PreferredAuthentications=publickey,password,keyboard-interactive
+	-o StrictHostKeyChecking=no
+	-o UserKnownHostsFile=/dev/null
+)
+if [[ -f "$HOME/.ssh/id_ed25519.pub" && -f "$HOME/.ssh/id_ed25519" ]]; then
+	opts+=(-i "$HOME/.ssh/id_ed25519")
+elif [[ -f "$HOME/.ssh/id_rsa.pub" && -f "$HOME/.ssh/id_rsa" ]]; then
+	opts+=(-i "$HOME/.ssh/id_rsa")
+fi
+
+# Always treat the destination as a path on this host, even if it contains ':'.
+destination="$2"
+if [[ "$destination" != /* ]]; then
+	destination="./$destination"
+fi
+exec scp "${opts[@]}" "${recursive[@]}" -- "${target}:$1" "$destination"
