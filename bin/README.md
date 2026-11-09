@@ -2,72 +2,99 @@
 
 ## ropen
 
-`ropen` opens a file on the local Mac from a remote SSH session. It copies the
-remote file through a reverse SSH tunnel and runs macOS `open` locally.
+`ropen` copies a remote file into the connected local computer's `~/Downloads`
+and opens it with macOS `open` or Linux `xdg-open`. Use `-n` to copy only.
 
-### Local Mac SSH Config
+### Connect normally, transfer without managing ports
 
-Add this to the **local Mac** `~/.ssh/config`:
+Install `bin/ropen` on the server and optionally on the client (Python 3 required).
+On the client, add the following to `~/.ssh/config`, retaining each host's
+existing HostName, User, Port and other forwards:
 
 ```sshconfig
-Host <hostname> snu10
-  RemoteForward 2222 localhost:22
-  ExitOnForwardFailure yes
+Host my-server
+  ControlMaster auto
+  ControlPath /tmp/ropen-master-%r-%C.sock
+  ControlPersist 60
+  RemoteForward /tmp/ropen-control-%r-%C.sock /tmp/ropen-master-%r-%C.sock
   ServerAliveInterval 30
   ServerAliveCountMax 3
 ```
 
-Then connect from the Mac using the host alias:
-
-```bash
-ssh snu10
-```
-
-If a host needs a custom SSH port or hostname, keep those settings in the same
-host block:
+On each Linux SSH server, add the following at the **end** of sshd_config,
+validate with `sudo sshd -t`, then reload the SSH service. Replace `hslyu` with
+the remote account. This lets a new connection replace the Unix socket left
+after the previous transport exits, without changing settings for other users:
 
 ```sshconfig
-Host snu10
-  HostName snu10
-  User hslyu
-  Port 17771
-  RemoteForward 2222 localhost:22
-  ExitOnForwardFailure yes
-  ServerAliveInterval 30
-  ServerAliveCountMax 3
+Match User hslyu
+  StreamLocalBindUnlink yes
+Match all
 ```
 
-`ropen` expects the tunnel to exist at `localhost:2222` on the remote server by
-default. Override it only when needed:
+Remove the old `RemoteForward 2222 localhost:22`. Reconnect once after changing
+the client configuration; existing SSH transports do not acquire new forwards.
+Then use plain SSH as usual:
 
 ```bash
-ROPEN_PORT=2223 ropen paper.pdf
-ROPEN_USER=mac_user ropen paper.pdf
+ssh my-server
+# On the server:
+ropen -n paper.pdf
+ropen figure.png
 ```
 
-### First-Time Setup
+Alternatively, with `ropen` installed on the client:
 
-On the Mac, enable Remote Login:
-
-```text
-System Settings -> General -> Sharing -> Remote Login -> ON
+```bash
+ropen ssh my-server
+ropen ssh -p 17771 user@server.example
 ```
 
-From the remote SSH session, install the remote public key into the Mac through
-the tunnel:
+The private Unix socket forwards only the SSH master's control interface.
+For each transfer, `ropen` requests `-R 127.0.0.1:0:localhost:22` through that
+control interface. OpenSSH chooses a free TCP port, reports it to `ropen`, and
+the file is sent through that port. `ropen` cancels the port when finished,
+including on transfer failure. Concurrent transfers on one transport serialize
+their allocation and cleanup. No fixed port or `clear` step is required.
+
+The server currently requires Linux, Python 3 and permission to run `sudo -n ss`
+to identify SSH-owned sockets. The SSH/tmux session's connected client is chosen
+first. Detached Codex/VS Code processes can use a sole connected client. When
+several clients are available and the current one cannot be identified, choose
+the intended socket explicitly with `ROPEN_CONTROL=/tmp/ropen-control-...sock`.
+No arbitrary connection is selected.
+
+### First-time setup
+
+On macOS enable System Settings → General → Sharing → Remote Login. On Linux
+enable the local SSH service. From the server run:
 
 ```bash
 ropen login
 ```
 
-After that, open files from the remote server:
+This installs the server's public key in the connected client's authorized_keys.
+If client and server usernames differ, set `ROPEN_USER=local_username`.
+`--no-mkdir` requires the client's Downloads directory to exist. Explicit
+`ROPEN_PORT` and optional `ROPEN_HOST` remain available for manual tunnels, but
+there is no default TCP port. Local host keys are remembered in
+`~/.ssh/ropen_known_hosts` under an identity independent of the temporary port.
+
+### Reset all of this account's SSH forwards
 
 ```bash
-ropen paper.pdf
-ropen figure.png
-ropen -n paper.pdf
+ropen reset --dry-run  # list affected transports
+ropen reset
 ```
 
-macOS decides which local app opens the file based on the copied file's
-extension. Use `-n` or `--no-open` to only copy the file. Copied files are saved in the
-local Mac's `~/Downloads` directory.
+`reset` terminates this account's SSH transport processes holding forwarding
+listeners, including old 2222 tunnels, ropen control channels, local/dynamic
+forward listeners, and outgoing SSH commands with explicit forwarding options.
+All forwards carried by those transports close. Their login sessions, including
+the current one if it carries forwarding, may disconnect; reconnect normally to
+use ropen again. Application servers and other users' processes are excluded.
+Detached tmux sessions continue running. Outgoing reverse forwards configured
+only via SSH config without a local listener/control socket cannot be discovered
+from this server; reset those on their receiving server.
+
+`ropen clear` has been removed.
