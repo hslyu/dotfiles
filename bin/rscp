@@ -1,70 +1,48 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env python3
+"""Copy local files to this host using ropen's automatic reverse SSH tunnel."""
+import argparse
+from pathlib import Path
+import runpy
+import signal
+import subprocess
+import sys
 
-usage() {
-	cat <<'USAGE'
-usage: rscp [-r] LOCAL_PATH HOST_PATH
 
-Copy a file from the local machine to this host through the ropen tunnel.
-Use -r to copy a directory. Quote ~/ paths so this host does not expand them:
-  rscp '~/Downloads/file.pdf' .
-  rscp -r '~/Downloads/my folder' ./
+def main():
+    parser = argparse.ArgumentParser(
+        description='Copy a file from the connected local computer to this host; reverse ports are allocated automatically.',
+        epilog="Quote ~/ paths, e.g. rscp '~/Downloads/file.pdf' . or "
+               "rscp -r '~/Downloads/my folder' ./. Run ropen login to install the key. "
+               'Overrides: ROPEN_USER, ROPEN_CONTROL; ROPEN_PORT/ROPEN_HOST for a manual tunnel.')
+    parser.add_argument('-r', action='store_true', help='copy a directory recursively')
+    parser.add_argument('local_path')
+    parser.add_argument('host_path')
+    args = parser.parse_args()
 
-Uses ROPEN_PORT (default: 2222), ROPEN_HOST (default: localhost), and
-ROPEN_USER (default: this host's user), with the same SSH key as ropen.
-Run ropen login to install the key, or ropen clear to recover the tunnel.
-USAGE
-}
+    def interrupted(signum, frame):
+        raise SystemExit(128 + signum)
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGHUP, interrupted)
 
-recursive=()
-while [[ $# -gt 0 ]]; do
-	case "$1" in
-	-r) recursive=(-r); shift ;;
-	-h | --help) usage; exit 0 ;;
-	--) shift; break ;;
-	-*) printf 'rscp: unknown option: %s\n' "$1" >&2; exit 2 ;;
-	*) break ;;
-	esac
-done
-if [[ $# -ne 2 ]]; then
-	usage >&2
-	exit 2
-fi
+    ropen = runpy.run_path(str(Path(__file__).resolve().with_name('ropen')))
+    # Always interpret the destination as a path on this host, including ':'.
+    destination = args.host_path
+    if not destination.startswith('/'):
+        destination = './' + destination
+    with ropen['tunnel']() as (port, identity):
+        command = ropen['transfer_command'](port, identity, program='scp')
+        target = command.pop()
+        if args.r:
+            command.append('-r')
+        command += ['--', target + ':' + args.local_path, destination]
+        return subprocess.run(command).returncode
 
-port="${ROPEN_PORT:-2222}"
-host="${ROPEN_HOST:-localhost}"
-if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
-	printf 'rscp: invalid ROPEN_PORT: %s\n' "$port" >&2
-	exit 2
-fi
-# Brackets keep IPv6 addresses unambiguous in scp's host:path syntax.
-if [[ "$host" == *:* && "$host" != \[*\] ]]; then
-	host="[$host]"
-fi
-target="${ROPEN_USER:+${ROPEN_USER}@}${host}"
-opts=(
-	-P "$port"
-	-o ConnectTimeout=5
-	-o ServerAliveInterval=15
-	-o ServerAliveCountMax=2
-	-o ControlMaster=auto
-	-o ControlPersist=60
-	-o "ControlPath=/tmp/ropen-ssh-${USER}-${port}-%r@%h"
-	-o IdentitiesOnly=yes
-	-o NumberOfPasswordPrompts=1
-	-o PreferredAuthentications=publickey,password,keyboard-interactive
-	-o StrictHostKeyChecking=no
-	-o UserKnownHostsFile=/dev/null
-)
-if [[ -f "$HOME/.ssh/id_ed25519.pub" && -f "$HOME/.ssh/id_ed25519" ]]; then
-	opts+=(-i "$HOME/.ssh/id_ed25519")
-elif [[ -f "$HOME/.ssh/id_rsa.pub" && -f "$HOME/.ssh/id_rsa" ]]; then
-	opts+=(-i "$HOME/.ssh/id_rsa")
-fi
 
-# Always treat the destination as a path on this host, even if it contains ':'.
-destination="$2"
-if [[ "$destination" != /* ]]; then
-	destination="./$destination"
-fi
-exec scp "${opts[@]}" "${recursive[@]}" -- "${target}:$1" "$destination"
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+        print('rscp: ' + str(error), file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)

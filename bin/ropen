@@ -172,10 +172,12 @@ def key_pair(create=False):
     return None
 
 
-def transfer_command(port, identity):
+def transfer_command(port, identity, program='ssh'):
     host = os.environ.get('ROPEN_HOST', 'localhost')
+    if program == 'scp' and ':' in host and not host.startswith('['):
+        host = '[' + host + ']'
     target = (os.environ['ROPEN_USER'] + '@' if os.environ.get('ROPEN_USER') else '') + host
-    command = ['ssh', '-F', '/dev/null', '-p', str(port),
+    command = [program, '-F', '/dev/null', '-P' if program == 'scp' else '-p', str(port),
                '-o', 'ConnectTimeout=8', '-o', 'ServerAliveInterval=15',
                '-o', 'ServerAliveCountMax=2', '-o', 'ControlMaster=no',
                '-o', 'ControlPath=none', '-o', 'IdentitiesOnly=yes',

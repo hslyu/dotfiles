@@ -7,7 +7,8 @@ and opens it with macOS `open` or Linux `xdg-open`. Use `-n` to copy only.
 
 ### Connect normally, transfer without managing ports
 
-Install `bin/ropen` on the server and optionally on the client (Python 3 required).
+Install `bin/ropen` and `bin/rscp` together on the server, and optionally
+`bin/ropen` on the client (Python 3 required).
 On the client, add the following to `~/.ssh/config`, retaining each host's
 existing HostName, User, Port and other forwards:
 
@@ -98,3 +99,19 @@ only via SSH config without a local listener/control socket cannot be discovered
 from this server; reset those on their receiving server.
 
 `ropen clear` has been removed.
+
+## rscp
+
+`rscp` copies files from the connected local computer to this server. It shares
+`ropen`'s connection discovery, automatic port allocation, transfer lock, SSH key
+and host-key settings, and cancels the temporary tunnel even if copying fails.
+Use the connection and login setup above; no fixed port is required.
+
+```bash
+rscp '~/Downloads/file.pdf' .
+rscp -r '~/Downloads/my folder' ./
+```
+
+Quote `~/` paths to prevent the server shell from expanding them. `-r` copies
+directories. `ROPEN_USER` and `ROPEN_CONTROL` select the local user and connection;
+`ROPEN_PORT` and optional `ROPEN_HOST` still support manually configured tunnels.
