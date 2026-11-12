@@ -161,3 +161,6 @@ if [ -r "$HOME/.local/share/codex-fallback/shell.sh" ]; then
   . "$HOME/.local/share/codex-fallback/shell.sh"
 fi
 # <<< codex-fallback dotfiles <<<
+
+# Launch Antigravity CLI with automatic tool approval (YOLO mode).
+alias agy='agy --dangerously-skip-permissions'
